@@ -1,7 +1,7 @@
 // The one-screen responsive workspace shell (see CONTRACT.md "Hard layout
 // rule"). Composes the feature panels; owns no business logic itself.
 //
-//   >=1100px : Row[ CourseRail(272) | StudyPanel(flex) | StatusPanel(320) ]
+//   >=1100px : Row[ CourseRail(272) | StudyPanel(flex) | StatusPanel(344) ]
 //   800-1099 : Row[ CourseRail(248) | StudyPanel(flex) ], StatusPanel as an
 //              end drawer opened from a toggle StudyPanel exposes.
 //   <800     : bottom tabs (Courses / Study / Status).
@@ -93,7 +93,7 @@ class _WorkspaceState extends State<Workspace> {
           key: _scaffoldKey,
           endDrawer: layout == _Layout.medium
               ? const Drawer(
-                  width: 320,
+                  width: 344,
                   child: SafeArea(child: StatusPanel()),
                 )
               : null,
@@ -114,7 +114,7 @@ class _WorkspaceState extends State<Workspace> {
       children: [
         SizedBox(width: 272, child: CourseRail(onOpenSettings: _openSettings)),
         Expanded(child: study),
-        const SizedBox(width: 320, child: StatusPanel()),
+        const SizedBox(width: 344, child: StatusPanel()),
       ],
     );
   }

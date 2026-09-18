@@ -34,7 +34,7 @@ void main() {
     expect(find.textContaining('Saved by cache'), findsNothing);
   });
 
-  testWidgets('cards are inset from the panel edges by the panel padding', (tester) async {
+  testWidgets('cards are inset from the panel edges (card gap at the sides, panel padding on top)', (tester) async {
     final s = AppServices.demo();
     addTearDown(s.scheduler.dispose);
 
@@ -43,8 +43,8 @@ void main() {
 
     final panel = tester.getRect(find.byType(StatusPanel));
     final card = tester.getRect(find.byKey(TutorialTargets.budget));
-    expect(card.left - panel.left, ZLayout.panelPadding);
-    expect(panel.right - card.right, ZLayout.panelPadding);
+    expect(card.left - panel.left, ZLayout.cardGap);
+    expect(panel.right - card.right, ZLayout.cardGap);
     expect(card.top - panel.top, ZLayout.panelPadding);
   });
 

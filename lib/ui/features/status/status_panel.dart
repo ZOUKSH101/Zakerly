@@ -80,7 +80,12 @@ class StatusPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = Services.of(context);
     return Padding(
-      padding: const EdgeInsets.all(ZLayout.panelPadding),
+      // Cards carry their own 24px inner padding, so the column gutter is
+      // tighter at the sides; top and bottom still line up with the chat.
+      padding: const EdgeInsets.symmetric(
+        horizontal: ZLayout.cardGap,
+        vertical: ZLayout.panelPadding,
+      ),
       child: ListenableBuilder(
         listenable: s.scheduler,
         builder: (context, _) {
