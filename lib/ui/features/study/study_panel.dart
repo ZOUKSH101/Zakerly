@@ -13,6 +13,8 @@ import 'package:zakerly/core/util.dart';
 import 'package:zakerly/ui/features/tutorial/tutorial_targets.dart';
 import 'package:zakerly/ui/primitives/primitives.dart';
 
+import 'citations.dart';
+
 class StudyPanel extends StatefulWidget {
   const StudyPanel({super.key, required this.onVisualize, this.onOpenStatus});
 
@@ -144,16 +146,27 @@ class _StudyPanelState extends State<StudyPanel> {
   void _send(AppServices s, Course course) {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    final included = s.session.includedFileIds(course);
-    s.tutor.ask(course, included, text, s.session.mode);
+    _ask(s, course, text);
     _controller.clear();
     _focusNode.requestFocus();
   }
 
-  void _fillComposer(String text) {
-    _controller.text = text;
-    _controller.selection = TextSelection.collapsed(offset: text.length);
-    _focusNode.requestFocus();
+  void _ask(AppServices s, Course course, String question) {
+    final included = s.session.includedFileIds(course);
+    s.tutor.ask(course, included, question, s.session.mode);
+  }
+
+  /// The question the latest finished answer replied to, which is what an
+  /// animation of "the last answer" should draw.
+  String? _lastConcept(List<ChatMessage> thread) {
+    for (var i = thread.length - 1; i >= 0; i--) {
+      final m = thread[i];
+      if (m.author == Author.tutor && !m.pending && !m.failed) {
+        if (i > 0 && thread[i - 1].author == Author.student) return thread[i - 1].text;
+        return null;
+      }
+    }
+    return null;
   }
 
   /// Open jobs from the scheduler that belong to one of [course]'s
@@ -391,8 +404,9 @@ class _StudyPanelState extends State<StudyPanel> {
   Widget _buildChat(BuildContext context, AppServices s, Course course) {
     final thread = s.tutor.thread(course.id);
     if (thread.isEmpty) {
-      return _buildEmptyThread(context, course);
+      return _buildEmptyThread(context, s, course);
     }
+    final lastConcept = _lastConcept(thread);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -412,14 +426,24 @@ class _StudyPanelState extends State<StudyPanel> {
                 !msg.pending &&
                 !msg.failed;
 
-            Widget bubble = _buildBubble(context, msg);
+            final showAnimate =
+                isLastFinishedTutor && lastConcept != null && msg.citations.isNotEmpty;
+            Widget bubble = _buildBubble(
+              context,
+              msg,
+              showAnimate: showAnimate,
+              onAnimate: showAnimate && s.budget.canGenerateAnimation
+                  ? () => widget.onVisualize(course, lastConcept)
+                  : null,
+            );
             if (isLastFinishedTutor) {
               bubble = Semantics(liveRegion: true, child: bubble);
             }
 
             final aligned = Align(
-              alignment:
-                  msg.author == Author.student ? Alignment.centerRight : Alignment.centerLeft,
+              alignment: msg.author == Author.student
+                  ? AlignmentDirectional.centerEnd
+                  : AlignmentDirectional.centerStart,
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: bubbleMax),
                 child: bubble,
@@ -440,65 +464,103 @@ class _StudyPanelState extends State<StudyPanel> {
     );
   }
 
-  Widget _buildEmptyThread(BuildContext context, Course course) {
+  /// An empty thread is a home screen: one large question, the course it's
+  /// about, and three starters that send on tap.
+  Widget _buildEmptyThread(BuildContext context, AppServices s, Course course) {
     final z = context.z;
-    const suggestions = [
-      'Sum up the main ideas',
-      'Quiz me on this week',
-      'Explain the hardest part',
+    const starters = [
+      (Icons.notes_rounded, 'Sum up the main ideas'),
+      (Icons.quiz_outlined, 'Quiz me on this week'),
+      (Icons.lightbulb_outline_rounded, 'Explain the hardest part'),
     ];
-    return Align(
-      alignment: Alignment.topLeft,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: ZLayout.bubbleMaxWidth),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: ZSpace.s16),
-          child: FadeSlideIn(
-            index: 0,
-            child: ZCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Hi! Ask me anything about ${course.code}. '
-                    'I\'ll answer from your course files.',
-                    style: context.type.bodyLarge?.copyWith(color: z.text),
-                  ),
-                  const SizedBox(height: ZSpace.s16),
-                  Wrap(
-                    spacing: ZSpace.s8,
-                    runSpacing: ZSpace.s8,
+    final ready = course.files.isNotEmpty && course.isFullyIndexed;
+    final subline = ready
+        ? 'Ready. Ask me anything from ${course.name}.'
+        : 'Ask me anything from ${course.name}. I\'ll answer from your course files.';
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Short viewports: keep the block reachable rather than clipped.
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: ZLayout.homeMaxWidth),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: ZSpace.s24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      for (final sugg in suggestions)
-                        ZButton(
-                          label: sugg,
-                          variant: ZButtonVariant.tonal,
-                          size: ZButtonSize.sm,
-                          onPressed: () => _fillComposer(sugg),
+                      FadeSlideIn(
+                        index: 0,
+                        offset: ZMotion.staggerSectionTravel,
+                        child: Column(
+                          children: [
+                            Text(
+                              'What are we studying today?',
+                              textAlign: TextAlign.center,
+                              style: context.type.displaySmall?.copyWith(color: z.text),
+                            ),
+                            const SizedBox(height: ZSpace.s12),
+                            Text(
+                              subline,
+                              textAlign: TextAlign.center,
+                              style: context.type.bodyLarge?.copyWith(color: z.textSecondary),
+                            ),
+                          ],
                         ),
+                      ),
+                      const SizedBox(height: ZSpace.s32),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: ZSpace.s8,
+                        runSpacing: ZSpace.s8,
+                        children: [
+                          for (final (i, (icon, label)) in starters.indexed)
+                            FadeSlideIn(
+                              index: i + 1,
+                              child: ZChip(
+                                icon: icon,
+                                label: label,
+                                onPressed: () => _ask(s, course, label),
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildBubble(BuildContext context, ChatMessage msg) {
+  Widget _buildBubble(
+    BuildContext context,
+    ChatMessage msg, {
+    bool showAnimate = false,
+    VoidCallback? onAnimate,
+  }) {
     final z = context.z;
     if (msg.author == Author.student) {
+      // Brand bubble shape: lg corners, the one nearest the speaker at sm.
       return Container(
         padding: const EdgeInsets.symmetric(
           horizontal: ZSpace.s16,
-          vertical: ZSpace.s16,
+          vertical: ZSpace.s12,
         ),
         decoration: BoxDecoration(
           color: z.accent,
-          borderRadius: BorderRadius.circular(ZRadius.card),
+          borderRadius: const BorderRadiusDirectional.only(
+            topStart: Radius.circular(ZRadius.lg),
+            topEnd: Radius.circular(ZRadius.lg),
+            bottomStart: Radius.circular(ZRadius.lg),
+            bottomEnd: Radius.circular(ZRadius.sm),
+          ).resolve(Directionality.of(context)),
         ),
         child: Text(
           msg.text,
@@ -508,45 +570,95 @@ class _StudyPanelState extends State<StudyPanel> {
     }
 
     final finished = !msg.pending && !msg.failed;
+    if (!finished) {
+      return ZCard(
+        padding: ZSpace.s20,
+        child: msg.pending
+            ? const ZTypingDots()
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(Icons.error_outline_rounded, size: ZIcon.md, color: z.danger),
+                  ),
+                  const SizedBox(width: ZSpace.s8),
+                  Expanded(
+                    child: Text(
+                      msg.text,
+                      style: context.type.bodyLarge?.copyWith(color: z.text),
+                    ),
+                  ),
+                ],
+              ),
+      );
+    }
+
+    final parsed = parseAnswer(msg.text, fallback: msg.citations);
+    final body = context.type.bodyLarge?.copyWith(color: z.text);
     return ZCard(
+      padding: ZSpace.s20,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (msg.pending)
-            const ZTypingDots()
-          else if (msg.failed)
-            Text(
-              msg.text,
-              style: context.type.bodyLarge?.copyWith(color: z.danger),
-            )
-          else
-            SelectableText(
-              msg.text,
-              style: context.type.bodyLarge?.copyWith(color: z.text),
+          SelectionArea(
+            child: Text.rich(
+              TextSpan(
+                style: body,
+                children: [
+                  for (final part in parsed.parts)
+                    switch (part) {
+                      AnswerText(:final text) => TextSpan(text: text),
+                      AnswerCite(:final number) => WidgetSpan(
+                          alignment: PlaceholderAlignment.top,
+                          child: Padding(
+                            padding: const EdgeInsetsDirectional.only(start: 3, end: 1),
+                            child: _CiteMark(
+                              number: number,
+                              source: parsed.sources[number - 1],
+                            ),
+                          ),
+                        ),
+                    },
+                ],
+              ),
             ),
-          if (finished && msg.citations.isNotEmpty) ...[
+          ),
+          if (parsed.sources.isNotEmpty) ...[
+            const SizedBox(height: ZSpace.s16),
+            Container(height: 1, color: z.hairline),
             const SizedBox(height: ZSpace.s12),
+            for (final (i, source) in parsed.sources.indexed)
+              Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : ZSpace.s8),
+                child: _SourceRow(number: i + 1, source: source),
+              ),
+          ],
+          if (showAnimate || msg.naiveTokens > 0) ...[
+            const SizedBox(height: ZSpace.s16),
             Wrap(
-              spacing: ZSpace.s4,
-              runSpacing: ZSpace.s4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: ZSpace.s12,
+              runSpacing: ZSpace.s8,
               children: [
-                for (final c in msg.citations)
-                  Semantics(
-                    label: 'Source: ${c.fileName}, section ${c.heading}',
-                    child: ExcludeSemantics(
-                      child: ZBadge(
-                        icon: Icons.description_outlined,
-                        label: '${_stripExtension(c.fileName)} · ${c.heading}',
-                      ),
+                if (showAnimate)
+                  Tooltip(
+                    message: onAnimate == null
+                        ? 'That\'s all the new animations for today'
+                        : 'Draw this answer as a short animation',
+                    child: ZButton(
+                      key: const ValueKey('animate-answer'),
+                      label: 'Animate it',
+                      leading: Icons.play_circle_outline_rounded,
+                      variant: ZButtonVariant.tonal,
+                      size: ZButtonSize.sm,
+                      onPressed: onAnimate,
                     ),
                   ),
+                if (msg.naiveTokens > 0) _buildMetaCaption(context, msg),
               ],
             ),
-          ],
-          if (finished && msg.naiveTokens > 0) ...[
-            const SizedBox(height: ZSpace.s12),
-            _buildMetaCaption(context, msg),
           ],
         ],
       ),
@@ -582,16 +694,7 @@ class _StudyPanelState extends State<StudyPanel> {
     final text = _controller.text;
     final canSend = text.trim().isNotEmpty && !lastPending;
 
-    String? lastConcept;
-    for (var i = thread.length - 1; i >= 0; i--) {
-      final m = thread[i];
-      if (m.author == Author.tutor && !m.pending && !m.failed) {
-        if (i > 0 && thread[i - 1].author == Author.student) {
-          lastConcept = thread[i - 1].text;
-        }
-        break;
-      }
-    }
+    final lastConcept = _lastConcept(thread);
     final canVisualize = lastConcept != null && s.budget.canGenerateAnimation;
 
     String caption;
@@ -617,40 +720,29 @@ class _StudyPanelState extends State<StudyPanel> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: ZTextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                label: 'Ask the tutor',
-                hint: 'Ask about ${course.code}…',
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) {
-                  if (canSend) _send(s, course);
-                },
-              ),
-            ),
-            const SizedBox(width: ZSpace.s8),
+        ZComposer(
+          controller: _controller,
+          focusNode: _focusNode,
+          semanticLabel: 'Ask the tutor',
+          hint: 'Ask about ${course.code}…',
+          canSend: canSend,
+          onSend: () => _send(s, course),
+          actions: [
             ZIconButton(
               key: TutorialTargets.visualize,
-              icon: Icons.auto_awesome_motion,
+              icon: Icons.play_circle_outline_rounded,
               tooltip: 'Animate the last answer',
-              onPressed: canVisualize ? () => widget.onVisualize(course, lastConcept!) : null,
-            ),
-            const SizedBox(width: ZSpace.s8),
-            ZIconButton(
-              icon: Icons.arrow_upward,
-              tooltip: 'Send',
-              onPressed: canSend ? () => _send(s, course) : null,
+              onPressed: canVisualize ? () => widget.onVisualize(course, lastConcept) : null,
             ),
           ],
         ),
-        const SizedBox(height: ZSpace.s4),
+        const SizedBox(height: ZSpace.s8),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: ZSpace.s4),
+          padding: const EdgeInsetsDirectional.only(start: ZSpace.s20, end: ZSpace.s20),
           child: Text(
             caption,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: context.type.bodySmall?.copyWith(color: captionColor),
           ),
         ),
@@ -662,7 +754,90 @@ class _StudyPanelState extends State<StudyPanel> {
 /// "1 file", "3 files".
 String _count(int n, String noun) => '$n $noun${n == 1 ? '' : 's'}';
 
-String _stripExtension(String fileName) {
-  final dot = fileName.lastIndexOf('.');
-  return dot <= 0 ? fileName : fileName.substring(0, dot);
+/// Small numbered superscript pill for an inline source. Hover shows the
+/// file and section; screen readers hear "source 1".
+class _CiteMark extends StatelessWidget {
+  const _CiteMark({required this.number, required this.source});
+
+  final int number;
+  final Citation source;
+
+  @override
+  Widget build(BuildContext context) {
+    final z = context.z;
+    final style = context.type.labelSmall;
+    return Tooltip(
+      message: '${stripExtension(source.fileName)} · ${source.heading}',
+      child: Semantics(
+        label: 'Source $number: ${source.fileName}, ${source.heading}',
+        excludeSemantics: true,
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 16),
+          height: 16,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: z.accentSoft,
+            borderRadius: BorderRadius.circular(ZRadius.pill),
+          ),
+          child: Text(
+            '$number',
+            style: style == null
+                ? null
+                : ZType.withWeight(style, FontWeight.w600).copyWith(
+                    color: z.accentText,
+                    height: 1,
+                    letterSpacing: 0,
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One line of the source list under an answer: the same numbered pill,
+/// then the file and the section.
+class _SourceRow extends StatelessWidget {
+  const _SourceRow({required this.number, required this.source});
+
+  final int number;
+  final Citation source;
+
+  @override
+  Widget build(BuildContext context) {
+    final z = context.z;
+    final caption = context.type.bodySmall;
+    final file = stripExtension(source.fileName);
+    return Row(
+      children: [
+        ExcludeSemantics(child: _CiteMark(number: number, source: source)),
+        const SizedBox(width: ZSpace.s8),
+        Expanded(
+          child: Tooltip(
+            message: '${source.fileName} · ${source.heading}',
+            waitDuration: const Duration(milliseconds: 600),
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: file,
+                    style: caption == null
+                        ? null
+                        : ZType.withWeight(caption, FontWeight.w500).copyWith(color: z.text),
+                  ),
+                  TextSpan(
+                    text: ' · ${source.heading}',
+                    style: caption?.copyWith(color: z.textSecondary),
+                  ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

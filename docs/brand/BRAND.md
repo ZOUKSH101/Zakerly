@@ -244,7 +244,7 @@ Suggested additions to `ZMotion`: `draw = 600ms` (stroke draw-on, decel) and `sp
 | Network error | Error: request failed (500). | Canvas isn't answering right now. Try again in a bit. | Canvas مش بيرد دلوقتي. جرّب كمان شوية. |
 | Chat placeholder | Enter your question | Ask about this course | اسأل في المادة دي |
 
-Mode names stay short and parallel: **Explain / Socratic / Quiz me**, in Arabic **اشرحلي / ناقشني / امتحنّي**.
+Mode names stay short and parallel: **Explain / Guide me / Quiz me**, in Arabic **اشرحلي / ناقشني / امتحنّي**.
 
 ---
 

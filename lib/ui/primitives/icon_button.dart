@@ -23,7 +23,7 @@ class ZIconButton extends StatelessWidget {
     final z = context.z;
     final disabled = onPressed == null;
     final bg = selected ? z.accentSoft : Colors.transparent;
-    final fg = selected ? z.accent : z.textSecondary;
+    final fg = selected ? z.accentText : z.textSecondary;
 
     return Tooltip(
       message: tooltip,

@@ -25,10 +25,10 @@ html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--fg);
   overflow:hidden}
 .stage{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto auto;
   gap:1.2vh;padding:3vh 4vw}
-h1{margin:0;font-size:clamp(18px,3.2vmin,30px);font-weight:650;letter-spacing:-.01em}
-.sub{color:var(--muted);font-size:clamp(12px,1.6vmin,15px);margin-top:.3em}
+h1{margin:0;font-size:clamp(20px,3.8vmin,38px);font-weight:650;letter-spacing:-.01em;line-height:1.15}
+.sub{color:var(--muted);font-size:clamp(13px,2vmin,18px);margin-top:.35em}
 main{min-height:0;display:flex;align-items:center;justify-content:center}
-.caption{margin:0;min-height:1.4em;font-size:clamp(13px,1.8vmin,16px)}
+.caption{margin:0;min-height:1.4em;font-size:clamp(14px,2.2vmin,20px)}
 .controls{display:flex;align-items:center;gap:1.6vw}
 .controls button{font:inherit;font-size:clamp(13px,1.6vmin,15px);border:1px solid var(--border);
   background:var(--card);color:var(--fg);border-radius:10px;padding:.55em 1.2em;cursor:pointer}
@@ -284,16 +284,18 @@ String growthAnimation(String concept) => _shell(
     );
 
 const _keyPointsCss = r'''
-main{align-items:flex-start}
-ol{list-style:none;margin:0;padding:0;counter-reset:k;display:grid;gap:1.6vh;align-content:start;width:100%}
-li{counter-increment:k;display:grid;grid-template-columns:auto 1fr;column-gap:14px;opacity:0;
+main{align-items:center;justify-content:center;overflow:hidden}
+ol{list-style:none;margin:0 auto;padding:0;counter-reset:k;display:grid;gap:clamp(12px,2.6vmin,28px);
+align-content:center;width:min(100%,62em);font-size:clamp(15px,2.3vmin,24px)}
+li{counter-increment:k;display:grid;grid-template-columns:auto 1fr;column-gap:1em;align-items:start;opacity:0;
 transform:translateY(16px);transition:transform .4s cubic-bezier(0,0,.5,1),opacity .4s ease}
-li.on{opacity:1;transform:none}
+li.on{opacity:.55;transform:none}
+li.current{opacity:1}
 li.current b{color:var(--accent)}
-li::before{content:counter(k);width:2.4em;height:2.4em;border-radius:50%;display:grid;
-place-items:center;background:var(--accent-weak);color:var(--accent);font-weight:700;font-size:clamp(13px,1.6vmin,16px)}
-li b{display:block;font-size:clamp(14px,2vmin,18px)}
-li span{color:var(--muted);font-size:clamp(12px,1.6vmin,15px)}
+li::before{content:counter(k);width:2.2em;height:2.2em;border-radius:50%;display:grid;
+place-items:center;background:var(--accent-weak);color:var(--accent);font-weight:700;font-size:.9em}
+li b{display:block;font-size:1.25em;line-height:1.2;font-weight:650;letter-spacing:-.01em}
+li span{display:block;margin-top:.3em;color:var(--muted);font-size:1em;line-height:1.45}
 @media (prefers-reduced-motion: reduce){ li{transition:none} }
 ''';
 

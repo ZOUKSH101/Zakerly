@@ -6,6 +6,8 @@ export 'badge.dart';
 export 'bar.dart';
 export 'button.dart';
 export 'card.dart';
+export 'chip.dart';
+export 'composer.dart';
 export 'dialog.dart';
 export 'empty.dart';
 export 'eyebrow.dart';

@@ -17,7 +17,7 @@ class ZBadge extends StatelessWidget {
     final z = context.z;
     final (bg, fg) = switch (tone) {
       ZBadgeTone.neutral => (z.raised2, z.textSecondary),
-      ZBadgeTone.accent => (z.accentSoft, z.accent),
+      ZBadgeTone.accent => (z.accentSoft, z.accentText),
       ZBadgeTone.success => (z.success.withValues(alpha: 0.16), z.success),
       ZBadgeTone.warning => (z.warning.withValues(alpha: 0.16), z.warning),
       ZBadgeTone.danger => (z.danger.withValues(alpha: 0.16), z.danger),

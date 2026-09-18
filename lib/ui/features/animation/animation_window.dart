@@ -39,6 +39,34 @@ class _AnimationWindowState extends State<_AnimationWindow> {
   int _replay = 0;
   bool _loaded = false;
 
+  /// True from the moment the dialog starts to close. The iframe is a
+  /// platform view: it ignores the exit fade and would linger over the chat
+  /// as a ghost, so it's removed on the first frame of the exit instead.
+  bool _closing = false;
+  Animation<double>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context)?.animation;
+    if (!identical(route, _route)) {
+      _route?.removeStatusListener(_onRouteStatus);
+      _route = route;
+      _route?.addStatusListener(_onRouteStatus);
+    }
+  }
+
+  void _onRouteStatus(AnimationStatus status) {
+    final closing = status == AnimationStatus.reverse || status == AnimationStatus.dismissed;
+    if (closing != _closing && mounted) setState(() => _closing = closing);
+  }
+
+  @override
+  void dispose() {
+    _route?.removeStatusListener(_onRouteStatus);
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -123,7 +151,12 @@ class _AnimationWindowState extends State<_AnimationWindow> {
               );
             }
             final result = snapshot.data!;
-            return _Result(course: widget.course, result: result, replayKey: _replay);
+            return _Result(
+              course: widget.course,
+              result: result,
+              replayKey: _replay,
+              closing: _closing,
+            );
           },
         ),
       ),
@@ -132,11 +165,17 @@ class _AnimationWindowState extends State<_AnimationWindow> {
 }
 
 class _Result extends StatelessWidget {
-  const _Result({required this.course, required this.result, required this.replayKey});
+  const _Result({
+    required this.course,
+    required this.result,
+    required this.replayKey,
+    required this.closing,
+  });
 
   final Course course;
   final AnimationResult result;
   final int replayKey;
+  final bool closing;
 
   @override
   Widget build(BuildContext context) {
@@ -181,11 +220,13 @@ class _Result extends StatelessWidget {
         Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(ZRadius.md),
-            child: HtmlFrame(
-              key: ValueKey(Object.hash(replayKey, result.html)),
-              title: 'Animation: ${result.concept}',
-              html: result.html,
-            ),
+            child: closing
+                ? ColoredBox(color: z.raised)
+                : HtmlFrame(
+                    key: ValueKey(Object.hash(replayKey, result.html)),
+                    title: 'Animation: ${result.concept}',
+                    html: result.html,
+                  ),
           ),
         ),
       ],

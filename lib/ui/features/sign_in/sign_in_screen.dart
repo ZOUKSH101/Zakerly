@@ -99,6 +99,8 @@ class _SignInScreenState extends State<SignInScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        const Center(child: _GlowingMark()),
+                        const SizedBox(height: ZSpace.s24),
                         FadeSlideIn(
                           index: 0,
                           child: Column(
@@ -109,25 +111,29 @@ class _SignInScreenState extends State<SignInScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.baseline,
                                 textBaseline: TextBaseline.alphabetic,
                                 children: [
-                                  Text('Zakerly', style: type.displaySmall),
+                                  Text('Zakerly', style: type.displayLarge),
                                   const SizedBox(width: ZSpace.s12),
                                   Text(
                                     'ذاكرلي',
                                     locale: const Locale('ar'),
-                                    style: type.titleLarge?.copyWith(color: z.accent),
+                                    style: type.titleLarge == null
+                                        ? null
+                                        : ZType.arabic(
+                                            ZType.withWeight(type.titleLarge!, FontWeight.w500),
+                                          ).copyWith(color: z.textSecondary),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: ZSpace.s8),
+                              const SizedBox(height: ZSpace.s12),
                               Text(
-                                'Sign in to get back to your courses.',
+                                'I already read your slides. Sign in and let\'s study.',
                                 textAlign: TextAlign.center,
-                                style: type.bodyMedium,
+                                style: type.bodyLarge?.copyWith(color: z.textSecondary),
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: ZSpace.s24),
+                        const SizedBox(height: ZSpace.s32),
                         AutofillGroup(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -174,11 +180,13 @@ class _SignInScreenState extends State<SignInScreen> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: ZSpace.s20),
+                        const SizedBox(height: ZSpace.s24),
                         FadeSlideIn(
                           index: 3,
                           child: ZButton(
                             label: 'Continue',
+                            size: ZButtonSize.lg,
+                            expand: true,
                             loading: emailLoading,
                             onPressed: busy ? null : _submitEmail,
                           ),
@@ -189,6 +197,8 @@ class _SignInScreenState extends State<SignInScreen> {
                           child: ZButton(
                             label: 'Continue with Google',
                             variant: ZButtonVariant.tonal,
+                            size: ZButtonSize.lg,
+                            expand: true,
                             loading: googleLoading,
                             onPressed: busy ? null : _submitGoogle,
                           ),
@@ -201,6 +211,56 @@ class _SignInScreenState extends State<SignInScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// The big mark that writes itself (BRAND.md delight 1), over a wide, very
+/// soft Hibiscus wash on the page. The wash sits on the background, never on
+/// the tile, so the mark itself stays flat as the brand asks.
+class _GlowingMark extends StatelessWidget {
+  const _GlowingMark();
+
+  static const double _mark = 72;
+  static const double _glowReach = 170;
+
+  @override
+  Widget build(BuildContext context) {
+    final z = context.z;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final glow = z.accent.withValues(alpha: dark ? 0.20 : 0.11);
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return SizedBox.square(
+      dimension: _mark,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            left: -_glowReach,
+            top: -_glowReach,
+            right: -_glowReach,
+            bottom: -_glowReach,
+            child: IgnorePointer(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: reduced ? 1 : 0, end: 1),
+                duration: ZMotion.staggerOpacity,
+                curve: ZMotion.decel,
+                builder: (context, t, child) => Opacity(opacity: t, child: child),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [glow, glow.withValues(alpha: 0)],
+                      stops: const [0, 1],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const ZLogo(size: _mark),
+        ],
       ),
     );
   }

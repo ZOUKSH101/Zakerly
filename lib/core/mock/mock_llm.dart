@@ -61,7 +61,7 @@ class MockLlm implements LlmProvider {
       final other = sources[1];
       b.write('\n\nRelated: ${_sentences(other.text).first} [${other.file} · ${other.heading}]');
     }
-    b.write('\n\nWant to see it move? Tap the animate button next to Send.');
+    b.write('\n\nWant to see it move? Tap Animate it.');
     return b.toString();
   }
 

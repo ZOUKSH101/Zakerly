@@ -18,24 +18,57 @@ import '../../../core/util.dart';
 import '../../primitives/primitives.dart';
 import '../tutorial/tutorial_targets.dart';
 
-/// Rendered height of a single-line [ZRow] (title only, no subtitle).
-const double _kFileRowExtent = 44;
+/// File names wrap to at most this many lines.
+const int _kFileTitleLines = 2;
 
-/// Fits as many [items] as will render in [maxHeight] at [rowExtent] per
-/// row. If not everything fits, one row's worth of space is reserved for an
-/// overflow "+N more" line.
+/// Height reserved for the "+N more" line.
+const double _kMoreExtent = 24;
+
+/// Fits as many [items] as will render in [maxHeight], given each row's own
+/// [extents]. If not everything fits, room is reserved for a "+N more" line.
 ({List<T> visible, int overflow}) _fitRows<T>(
   List<T> items,
+  List<double> extents,
   double maxHeight,
-  double rowExtent,
 ) {
-  final maxRows = maxHeight <= 0 ? 0 : (maxHeight / rowExtent).floor();
-  if (items.length <= maxRows) {
-    return (visible: items, overflow: 0);
+  final total = extents.fold<double>(0, (a, b) => a + b);
+  if (total <= maxHeight) return (visible: items, overflow: 0);
+  var used = 0.0;
+  var count = 0;
+  while (count < items.length && used + extents[count] + _kMoreExtent <= maxHeight) {
+    used += extents[count];
+    count++;
   }
-  final showCount = (maxRows - 1).clamp(0, items.length);
-  return (visible: items.take(showCount).toList(), overflow: items.length - showCount);
+  return (visible: items.take(count).toList(), overflow: items.length - count);
 }
+
+/// Measures how tall each file row will be: one or two lines of title.
+List<double> _fileRowExtents(BuildContext context, List<CourseFile> files, double rowWidth) {
+  final style = context.type.bodyLarge;
+  final titleWidth = rowWidth -
+      ZRow.chromeWidth(leading: true, trailing: true) -
+      _StatusDot.size -
+      _kToggleSize;
+  final direction = Directionality.of(context);
+  final scaler = MediaQuery.textScalerOf(context);
+  return [
+    for (final f in files)
+      () {
+        final painter = TextPainter(
+          text: TextSpan(text: f.name, style: style),
+          maxLines: _kFileTitleLines,
+          textDirection: direction,
+          textScaler: scaler,
+        )..layout(maxWidth: titleWidth <= 0 ? 1 : titleWidth);
+        final h = painter.height + ZRow.verticalPadding;
+        painter.dispose();
+        return h < ZRow.minExtent ? ZRow.minExtent : h;
+      }(),
+  ];
+}
+
+/// Edge of a [ZIconButton].
+const double _kToggleSize = 32;
 
 class StatusPanel extends StatelessWidget {
   const StatusPanel({super.key});
@@ -163,8 +196,8 @@ class _FilesCard extends StatelessWidget {
                         builder: (context, constraints) {
                           final fit = _fitRows(
                             course.files,
+                            _fileRowExtents(context, course.files, constraints.maxWidth),
                             constraints.maxHeight,
-                            _kFileRowExtent,
                           );
                           return Column(
                             mainAxisSize: MainAxisSize.min,
@@ -207,6 +240,7 @@ class _FileRow extends StatelessWidget {
     return ZRow(
       leading: _StatusDot(status: file.status),
       title: file.name,
+      titleMaxLines: _kFileTitleLines,
       trailing: MergeSemantics(
         child: Semantics(
           checked: included,
@@ -232,6 +266,8 @@ class _StatusDot extends StatelessWidget {
 
   final FileStatus status;
 
+  static const double size = 10;
+
   String get _label => switch (status) {
         FileStatus.ready => 'Ready',
         FileStatus.queued => 'Waiting',
@@ -243,7 +279,7 @@ class _StatusDot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (status == FileStatus.processing) {
-      return Semantics(label: _label, child: const ZSpinner(size: 10));
+      return Semantics(label: _label, child: const ZSpinner(size: size));
     }
     final z = context.z;
     final color = switch (status) {
@@ -253,12 +289,20 @@ class _StatusDot extends StatelessWidget {
       FileStatus.unprocessed => z.textTertiary,
       FileStatus.processing => z.accent,
     };
-    return Semantics(
-      label: _label,
-      child: Container(
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    return Tooltip(
+      message: _label,
+      child: Semantics(
+        label: _label,
+        child: SizedBox.square(
+          dimension: size,
+          child: Center(
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -317,6 +361,8 @@ class _ProcessingCard extends StatelessWidget {
 class _JobRow extends StatelessWidget {
   const _JobRow({required this.s, required this.job});
 
+  static const _processPrefix = 'Process ';
+
   final AppServices s;
   final Job job;
 
@@ -325,25 +371,38 @@ class _JobRow extends StatelessWidget {
     final z = context.z;
     final running = job.state == JobState.running;
     final canPrioritize = !running && job.lane == JobLane.background;
+    // "Process Week 3 - Trees.pdf" reads as just the file here: the card
+    // title already says what's happening.
+    final title = job.label.startsWith(_processPrefix)
+        ? job.label.substring(_processPrefix.length)
+        : job.label;
+    final reason = running ? 'Working on it now' : (job.waitReason ?? 'Waiting');
 
     return ZRow(
-      leading: Icon(
-        job.lane == JobLane.interactive ? Icons.bolt : Icons.nightlight_round,
-        size: ZIcon.md,
-        color: z.textSecondary,
-      ),
-      title: job.label,
-      subtitle: running ? null : job.waitReason,
-      trailing: running
-          ? const ZSpinner()
-          : canPrioritize
-              ? ZButton(
-                  label: 'Process now',
-                  onPressed: () => s.scheduler.prioritize(job),
-                  variant: ZButtonVariant.tonal,
-                  size: ZButtonSize.sm,
-                )
-              : null,
+      leading: running
+          ? const ZSpinner(size: _StatusDot.size)
+          : SizedBox.square(
+              dimension: _StatusDot.size,
+              child: Center(
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: job.lane == JobLane.interactive ? z.accent : z.textTertiary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+      title: title,
+      tooltip: reason,
+      trailing: canPrioritize
+          ? ZIconButton(
+              icon: Icons.fast_forward_rounded,
+              tooltip: 'Process now',
+              onPressed: () => s.scheduler.prioritize(job),
+            )
+          : null,
     );
   }
 }

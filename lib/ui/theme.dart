@@ -38,6 +38,15 @@ class ZLayout {
   static const double cardGap = 16;
   /// Vertical gap between distinct sections within a panel.
   static const double sectionGap = 24;
+
+  /// Width of the centered "home" block in an empty chat thread.
+  static const double homeMaxWidth = 560;
+
+  /// The chat composer grows up to this many lines, then scrolls inside.
+  static const int composerMaxLines = 5;
+
+  /// Left list in a two-pane dialog (Settings).
+  static const double sideNavWidth = 196;
 }
 
 /// Icon sizes used across primitives and features.
@@ -287,6 +296,8 @@ class ZTokens extends ThemeExtension<ZTokens> {
 class ZType {
   ZType._();
 
+  /// Landing and empty-thread hero line only. One per screen.
+  static const double hero = 44;
   static const double display = 34;
   static const double title = 22;
   static const double headline = 17;
@@ -296,7 +307,7 @@ class ZType {
   static const double micro = 11;
 
   /// Builds the [TextTheme] for [tokens], mapped onto Material slots:
-  /// displaySmall=display, titleLarge=title, titleMedium=headline,
+  /// displayLarge=hero, displaySmall=display, titleLarge=title, titleMedium=headline,
   /// bodyLarge/bodyMedium=body, labelLarge=label, bodySmall=caption,
   /// labelSmall=micro.
   ///
@@ -304,6 +315,13 @@ class ZType {
   /// +0.15 line height, zero letter-spacing.
   static TextTheme textTheme(ZTokens tokens, {bool arabic = false}) {
     final base = TextTheme(
+      displayLarge: _style(
+        hero,
+        height: 1.08,
+        em: -0.012,
+        color: tokens.text,
+        weight: FontWeight.w600,
+      ),
       displaySmall: _style(
         display,
         height: 1.10,
@@ -340,6 +358,7 @@ class ZType {
     if (!arabic) return base;
     TextStyle? a(TextStyle? s) => s == null ? null : ZType.arabic(s);
     return base.copyWith(
+      displayLarge: a(base.displayLarge),
       displaySmall: a(base.displaySmall),
       titleLarge: a(base.titleLarge),
       titleMedium: a(base.titleMedium),

@@ -7,6 +7,7 @@ import '../../../core/budget.dart';
 import '../../../core/models.dart';
 import '../../primitives/primitives.dart';
 import '../tutorial/tutorial_targets.dart';
+import 'course_sync.dart';
 
 /// LEFT column of the one-screen workspace: brand mark, Canvas sync
 /// controls and the course list, with the signed-in user pinned at the
@@ -29,36 +30,42 @@ class CourseRail extends StatefulWidget {
 class _CourseRailState extends State<CourseRail> {
   bool _justSynced = false;
   Timer? _confirmTimer;
+  AppServices? _services;
+  DateTime? _seenSync;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final s = Services.of(context);
+    if (!identical(s, _services)) {
+      _services?.courses.removeListener(_onCourses);
+      _services = s;
+      _seenSync = s.courses.lastSynced;
+      s.courses.addListener(_onCourses);
+    }
+  }
 
   @override
   void dispose() {
+    _services?.courses.removeListener(_onCourses);
     _confirmTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _handleSync(AppServices s) async {
-    await s.courses.sync();
-    if (!mounted) return;
-    final courses = s.courses.courses;
-    if (courses.isEmpty) return;
-
-    final current = s.session.courseId;
-    if (current == null || s.courses.byId(current) == null) {
-      s.session.selectCourse(courses.first.id);
-    }
-
+  /// Shows the brief "Synced" check whenever a sync finishes, whether it
+  /// came from the button or from the workspace's sign-in sync.
+  void _onCourses() {
+    final last = _services?.courses.lastSynced;
+    if (last == null || last == _seenSync || !mounted) return;
+    _seenSync = last;
     setState(() => _justSynced = true);
     _confirmTimer?.cancel();
     _confirmTimer = Timer(const Duration(milliseconds: 1600), () {
       if (mounted) setState(() => _justSynced = false);
     });
-
-    for (final course in courses) {
-      if (!course.hasStarted && s.ingestion.canIndex(course)) {
-        s.ingestion.indexCourse(course);
-      }
-    }
   }
+
+  Future<void> _handleSync(AppServices s) => syncAndStartCourses(s);
 
   void _selectCourse(AppServices s, Course course) {
     s.session.selectCourse(course.id);
@@ -67,10 +74,11 @@ class _CourseRailState extends State<CourseRail> {
     }
   }
 
+  /// "5:01 pm", matching how the scheduler writes times.
   String _formatTime(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
+    final h12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
     final m = dt.minute.toString().padLeft(2, '0');
-    return '$h:$m';
+    return '$h12:$m ${dt.hour < 12 ? 'am' : 'pm'}';
   }
 
   @override
@@ -134,6 +142,10 @@ class _CourseRailState extends State<CourseRail> {
               Expanded(
                 child: AnimatedSwitcher(
                   duration: ZMotion.medium,
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: AlignmentDirectional.centerStart,
+                    children: [...previous, ?current],
+                  ),
                   child: _justSynced
                       ? Row(
                           key: const ValueKey('synced'),
@@ -147,14 +159,17 @@ class _CourseRailState extends State<CourseRail> {
                             ),
                           ],
                         )
-                      : Text(
-                          s.courses.lastSynced != null
-                              ? '${s.lms.host} · Synced ${_formatTime(s.courses.lastSynced!)}'
-                              : 'Not synced yet',
+                      : Tooltip(
                           key: const ValueKey('caption'),
-                          style: context.type.bodySmall?.copyWith(color: z.textSecondary),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          message: s.lms.host,
+                          child: Text(
+                            s.courses.lastSynced != null
+                                ? 'Synced ${_formatTime(s.courses.lastSynced!)}'
+                                : 'Not synced yet',
+                            style: context.type.bodySmall?.copyWith(color: z.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                 ),
               ),
@@ -299,9 +314,10 @@ class _CourseTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final z = context.z;
     final total = course.files.length;
-    final ready = course.readyCount;
+    final readyCount = course.readyCount;
+    final ready = total > 0 && course.isFullyIndexed;
     final failed = course.files.where((f) => f.status == FileStatus.failed).length;
-    final fraction = total == 0 ? 0.0 : ready / total;
+    final fraction = total == 0 ? 0.0 : readyCount / total;
     final canIndex = s.ingestion.canIndex(course);
 
     String statusText;
@@ -309,24 +325,23 @@ class _CourseTile extends StatelessWidget {
     Widget? trailing;
 
     if (course.hasPendingWork) {
+      // The ring already shows progress; no extra spinner to squeeze the name.
       statusText = 'Getting ready…';
-      trailing = const ZSpinner(size: 16);
     } else if (course.isFullyIndexed) {
       statusText = 'Ready';
     } else if (!course.hasStarted && canIndex) {
       statusText = 'Not started';
     } else if (!course.hasStarted) {
-      statusText = 'Locked';
-      trailing = const ZBadge(
-        tone: ZBadgeTone.warning,
-        icon: Icons.lock_outline,
-        label: 'Pro',
+      statusText = 'Needs Pro';
+      trailing = Tooltip(
+        message: 'The ${s.budget.plan.name} plan covers ${s.budget.plan.maxCourses} courses',
+        child: Icon(Icons.lock_outline, size: ZIcon.sm, color: z.textTertiary),
       );
     } else if (failed > 0) {
       statusText = '$failed didn\'t load';
       statusColor = z.danger;
     } else {
-      statusText = '$ready/$total ready';
+      statusText = '$readyCount/$total ready';
     }
 
     final lockedSuffix = (!course.hasStarted && !canIndex)
@@ -361,7 +376,18 @@ class _CourseTile extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ZRing(fraction: fraction, size: 24, stroke: 3),
+                    // Course ready (BRAND.md delight 2): the ring closes,
+                    // turns Mint, and the amber spark hops off its top.
+                    ZSpark(
+                      fired: ready,
+                      size: 7,
+                      child: ZRing(
+                        fraction: fraction,
+                        size: 24,
+                        stroke: 3,
+                        color: ready ? z.success : z.accent,
+                      ),
+                    ),
                     const SizedBox(width: ZSpace.s12),
                     Expanded(
                       child: Column(

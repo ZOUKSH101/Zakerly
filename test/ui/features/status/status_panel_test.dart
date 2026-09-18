@@ -79,6 +79,28 @@ void main() {
     expect(s.session.excludedFileIds.contains('f1'), isTrue);
   });
 
+  testWidgets('long file names get two lines instead of a hard cut', (tester) async {
+    final long = CourseFile(
+      id: 'f1',
+      courseId: 'c1',
+      name: 'Week 3 - Binary Search Trees and Balanced Variants.pdf',
+      kind: 'pdf',
+      sourceTokens: 100,
+    )..status = FileStatus.ready;
+    final course = Course(id: 'c1', code: 'CS201', name: 'DS', term: 'Fall', files: [long]);
+
+    final s = AppServices.demo();
+    addTearDown(s.scheduler.dispose);
+    s.courses.courses = [course];
+    s.session.selectCourse(course.id);
+
+    await tester.pumpWidget(_harness(s));
+    await tester.pump();
+
+    final text = tester.widget<Text>(find.text(long.name));
+    expect(text.maxLines, 2);
+  });
+
   testWidgets('processing card is hidden with nothing running or waiting', (tester) async {
     final s = AppServices.demo();
     addTearDown(s.scheduler.dispose);
@@ -108,15 +130,19 @@ void main() {
     await tester.pump();
 
     expect(find.text('In progress'), findsOneWidget);
-    expect(find.text('Process now'), findsOneWidget);
+    expect(find.byTooltip('Process now'), findsOneWidget);
     expect(find.text('Pro'), findsNothing);
     expect(find.byIcon(Icons.lock_outline), findsNothing);
+    // Only the dot and the name: the wait reason lives in a tooltip.
+    expect(find.text('Course notes'), findsOneWidget);
+    expect(find.text('Waiting for a free slot'), findsNothing);
+    expect(find.byTooltip('Waiting for a free slot'), findsOneWidget);
 
-    await tester.tap(find.text('Process now'));
+    await tester.tap(find.byTooltip('Process now'));
     await tester.pump();
 
     expect(job.lane, JobLane.interactive);
-    expect(find.text('Process now'), findsNothing);
+    expect(find.byTooltip('Process now'), findsNothing);
 
     // The job never gets a slot (maxConcurrent = 0), so stop the pacing
     // timer before the binding checks for pending timers.

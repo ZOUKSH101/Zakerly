@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:zakerly/core/app_services.dart';
@@ -57,8 +58,9 @@ void main() {
       await tester.pumpWidget(_harness(s));
       await tester.pump();
 
+      expect(find.text('What are we studying today?'), findsOneWidget);
       expect(
-        find.text('Hi! Ask me anything about CS1. I\'ll answer from your course files.'),
+        find.text('Ask me anything from CS1 course. I\'ll answer from your course files.'),
         findsOneWidget,
       );
       expect(find.text('Sum up the main ideas'), findsOneWidget);
@@ -71,14 +73,83 @@ void main() {
       );
 
       final field = tester.widget<TextField>(find.byType(TextField));
-      expect(field.enabled, isTrue);
+      expect(field.enabled, isNot(false));
 
       expect(find.textContaining(RegExp('index', caseSensitive: false)), findsNothing);
 
+      // A starter sends straight away; it doesn't just fill the composer.
       await tester.tap(find.text('Quiz me on this week'));
       await tester.pump();
+      final thread = s.tutor.thread(course.id);
+      expect(thread.first.author, Author.student);
+      expect(thread.first.text, 'Quiz me on this week');
       final updated = tester.widget<TextField>(find.byType(TextField));
-      expect(updated.controller!.text, 'Quiz me on this week');
+      expect(updated.controller!.text, isEmpty);
+    },
+  );
+
+  testWidgets('Enter sends, Shift+Enter does not', (tester) async {
+    final file = CourseFile(id: 'f1', courseId: 'c1', name: 'Week 1.pdf', kind: 'pdf', sourceTokens: 100)
+      ..status = FileStatus.processing;
+    final course = _course(id: 'c1', code: 'CS1', files: [file]);
+
+    final s = AppServices.demo();
+    addTearDown(s.scheduler.dispose);
+    s.courses.courses = [course];
+    s.session.selectCourse(course.id);
+
+    await tester.pumpWidget(_harness(s));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'First line');
+    await tester.pump();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pump();
+    expect(s.tutor.thread(course.id), isEmpty);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    final thread = s.tutor.thread(course.id);
+    expect(thread.first.text, startsWith('First line'));
+  });
+
+  testWidgets(
+    'inline [file · section] markers become numbered pills matched to one deduplicated source list',
+    (tester) async {
+      final file = CourseFile(id: 'f1', courseId: 'c1', name: 'Week 3 - Trees.pdf', kind: 'pdf', sourceTokens: 100)
+        ..status = FileStatus.ready;
+      final course = _course(id: 'c1', code: 'CS1', files: [file]);
+
+      final s = AppServices.demo();
+      addTearDown(s.scheduler.dispose);
+      s.courses.courses = [course];
+      s.session.selectCourse(course.id);
+
+      final thread = s.tutor.thread(course.id);
+      thread.add(ChatMessage(author: Author.student, text: 'How do I delete a key?'));
+      thread.add(
+        ChatMessage(
+          author: Author.tutor,
+          text: 'Splice in the child. [Week 3 - Trees.pdf · Deleting a key]\n\n'
+              'Then fix up. [Week 3 - Trees.pdf · Deleting a key] '
+              'Height matters. [Week 3 - Trees.pdf · Complexity]',
+        )..citations = const [
+            Citation('Week 3 - Trees.pdf', 'Deleting a key'),
+            Citation('Week 3 - Trees.pdf', 'Complexity'),
+          ],
+      );
+
+      await tester.pumpWidget(_harness(s));
+      await tester.pump();
+
+      expect(find.textContaining('[Week 3'), findsNothing);
+      // Source 1 is cited twice inline plus once in the list; source 2 once
+      // inline plus once in the list.
+      expect(find.text('1'), findsNWidgets(3));
+      expect(find.text('2'), findsNWidgets(2));
+      expect(find.byKey(const ValueKey('animate-answer')), findsOneWidget);
     },
   );
 

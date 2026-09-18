@@ -90,7 +90,8 @@ class _PressableState extends State<Pressable> with SingleTickerProviderStateMix
             builder: (context, child) => Transform.scale(scale: _controller.value, child: child),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                border: _showFocusRing ? Border.all(color: z.accent, width: 2) : null,
+                border: _showFocusRing ? Border.all(color: z.accentText, width: 2) : null,
+                borderRadius: _showFocusRing ? BorderRadius.circular(ZRadius.md) : null,
               ),
               child: widget.child,
             ),

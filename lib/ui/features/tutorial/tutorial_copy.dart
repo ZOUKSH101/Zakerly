@@ -20,13 +20,13 @@ class TutorialStep {
 final List<TutorialStep> tutorialSteps = [
   TutorialStep(
     target: TutorialTargets.sync,
-    title: 'Sync your courses',
-    body: 'Tap Sync to bring in your courses and files from Canvas.',
+    title: 'Your courses, synced',
+    body: 'I brought in your courses and files from Canvas. Tap Sync any time to get new ones.',
   ),
   TutorialStep(
     target: TutorialTargets.courses,
     title: 'Pick a course',
-    body: 'Tap one to open it.',
+    body: 'Tap one to open it. The ring fills as I read its files.',
   ),
   TutorialStep(
     target: TutorialTargets.files,

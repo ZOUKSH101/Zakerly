@@ -9,9 +9,11 @@
 // No page-level scrolling is introduced here; each panel manages its own.
 import 'package:flutter/material.dart';
 
+import '../core/app_services.dart';
 import '../core/models.dart';
 import 'features/animation/animation_window.dart';
 import 'features/courses/course_rail.dart';
+import 'features/courses/course_sync.dart';
 import 'features/settings/settings_dialog.dart';
 import 'features/status/status_panel.dart';
 import 'features/study/study_panel.dart';
@@ -38,11 +40,20 @@ class _WorkspaceState extends State<Workspace> {
   @override
   void initState() {
     super.initState();
-    // Shown once per browser (see TutorialStorage) — fired after the first
-    // frame so it never competes with this screen's own build.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) maybeShowTutorial(context);
-    });
+    // After the first frame: land on a synced course list (so nobody starts
+    // on an empty rail), then show the tour once per browser. Syncing first
+    // means every tour step has a real target: courses, files, the composer.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _landAndTour());
+  }
+
+  Future<void> _landAndTour() async {
+    if (!mounted) return;
+    final s = Services.of(context);
+    if (s.courses.courses.isEmpty && !s.courses.syncing) {
+      await syncAndStartCourses(s);
+    }
+    if (!mounted) return;
+    await maybeShowTutorial(context);
   }
 
   void _openSettings() => showSettingsDialog(context);
