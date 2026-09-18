@@ -48,7 +48,12 @@ class TutorService extends ChangeNotifier {
     var chunks = retrieve(question, files.expand((f) => f.chunks));
     // Course-wide asks name no specific term: fall back to the overview
     // (see isBroadRequest / overviewChunks in retrieval.dart).
-    if (chunks.isEmpty && isBroadRequest(question)) chunks = overviewChunks(files);
+    // A stray keyword hit ("sum UP" matching "sift-up") must not narrow a
+    // course-wide ask to one section, so broad asks always lead with it.
+    if (isBroadRequest(question)) {
+      final seen = <Chunk>{};
+      chunks = [...overviewChunks(files), ...chunks].where(seen.add).take(6).toList();
+    }
     final history = _historyTail(course.id);
     final prompt = Prompts.tutor(context: chunks, history: history, question: question);
     final system = Prompts.tutorSystem(course, mode, language: _language());
