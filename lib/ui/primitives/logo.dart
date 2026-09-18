@@ -43,7 +43,7 @@ class _ZLogoState extends State<ZLogo> with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: Duration(milliseconds: _totalMs),
-    value: _shouldPlay ? 0.0 : 1.0,
+    value: 1.0,
   );
 
   late final Animation<double> _tile = CurvedAnimation(
@@ -66,6 +66,7 @@ class _ZLogoState extends State<ZLogo> with SingleTickerProviderStateMixin {
     super.initState();
     if (_shouldPlay) {
       ZLogo._playedThisSession = true;
+      _controller.value = 0.0;
       WidgetsBinding.instance.addPostFrameCallback((_) => _start());
     }
   }

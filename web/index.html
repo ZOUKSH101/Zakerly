@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Zakerly (ذاكرلي): the study tutor that already read your slides and explains them as many times as you need.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -27,14 +27,19 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Theme color for the browser UI, light and dark. -->
-  <meta name="theme-color" content="#3F5EFB" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#4C63F5" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#C2255C" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0E0C0D" media="(prefers-color-scheme: dark)">
 
   <!-- Favicon: SVG (adapts to color scheme) with PNG fallback. -->
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="favicon.png"/>
 
   <title>Zakerly</title>
+  <!-- Paper background while Flutter boots, so there is no white flash in dark mode. -->
+  <style>
+    html, body { background: #F7F5F3; }
+    @media (prefers-color-scheme: dark) { html, body { background: #0E0C0D; } }
+  </style>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>

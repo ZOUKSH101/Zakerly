@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/app_services.dart';
@@ -20,8 +20,8 @@ class ZakerlyApp extends StatelessWidget {
       builder: (context, _) => MaterialApp(
         title: 'Zakerly',
         debugShowCheckedModeBanner: false,
-        theme: buildTheme(Brightness.light),
-        darkTheme: buildTheme(Brightness.dark),
+        theme: buildTheme(Brightness.light, arabic: prefs.language.isRtl),
+        darkTheme: buildTheme(Brightness.dark, arabic: prefs.language.isRtl),
         themeMode: prefs.themeMode,
         locale: prefs.language.locale,
         supportedLocales: [for (final l in AppLanguage.values) l.locale],

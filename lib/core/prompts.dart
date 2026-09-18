@@ -1,4 +1,4 @@
-import 'models.dart';
+﻿import 'models.dart';
 
 /// Prompt templates. These are written for the real model; the mock parses
 /// the same markers so the demo exercises the production prompt shape.
@@ -15,7 +15,7 @@ class Prompts {
     final base = 'You are Zakerly, a tutor for ${course.code} ${course.name}. '
         'Answer ONLY from the course context provided. If the context does not '
         'contain the answer, say so and name the material the student should check. '
-        'Cite sources inline as [file · section]. Reply in the language the student '
+        'Cite sources inline as [file Â· section]. Reply in the language the student '
         'writes in (Arabic or English). Keep answers short and concrete.';
     final style = switch (mode) {
       StudyMode.explain =>
@@ -67,7 +67,7 @@ class Prompts {
       'only advance automatically while Play is active. '
       'Respect prefers-reduced-motion by removing transitions and jumping straight to each step, '
       'still under the student\'s step control. '
-      'Support both light and dark mode with a prefers-color-scheme media query. Use #4C63F5 as '
+      'Support both light and dark mode with a prefers-color-scheme media query. Use #C2255C (light) / #D6336C (dark) as '
       'the accent color and a plain system font stack. '
       'Keep the writing calm and plain: short sentences, no buzzwords, and never use an em dash '
       'or en dash character. Every fact and label must come from the provided course context. '

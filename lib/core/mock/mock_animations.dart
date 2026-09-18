@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import '../util.dart';
 
@@ -11,12 +11,12 @@ import '../util.dart';
 const _baseCss = r'''
 :root{
   --bg:#ffffff;--fg:#1c1c1e;--muted:#6e6e73;--card:#f5f5f7;--border:#d8d8dc;
-  --accent:#4C63F5;--accent-weak:#eaedfd;
+  --accent:#C2255C;--accent-weak:#FBE7EE;
 }
 @media (prefers-color-scheme: dark){
   :root{
     --bg:#0b0b0f;--fg:#f5f5f7;--muted:#9a9aa0;--card:#1c1c1e;--border:#3a3a3c;
-    --accent:#7b8dfb;--accent-weak:#1d2350;
+    --accent:#D6336C;--accent-weak:#3A1522;
   }
 }
 *{box-sizing:border-box}
@@ -115,8 +115,8 @@ String _jsStringArray(List<String> items) {
   final s = jsonEncode(items);
   return s
       .replaceAll('</', '<\\/')
-      .replaceAll(' ', '\\u2028')
-      .replaceAll(' ', '\\u2029');
+      .replaceAll('â€¨', '\\u2028')
+      .replaceAll('â€©', '\\u2029');
 }
 
 String _shell({

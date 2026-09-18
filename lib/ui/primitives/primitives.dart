@@ -17,6 +17,7 @@ export 'pressable.dart';
 export 'ring.dart';
 export 'row.dart';
 export 'segmented.dart';
+export 'spark.dart';
 export 'spinner.dart';
 export 'switch_row.dart';
 export 'text_field.dart';

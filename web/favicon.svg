@@ -1,11 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Zakerly">
   <style>
-    .zk-bg { fill: #3F5EFB; }
-    @media (prefers-color-scheme: dark) {
-      .zk-bg { fill: #4C63F5; }
-    }
+    .tile { fill: #C2255C; }
+    @media (prefers-color-scheme: dark) { .tile { fill: #D6336C; } }
   </style>
-  <rect class="zk-bg" x="2" y="2" width="60" height="60" rx="17" />
-  <path d="M17 17 L47 17 L17 47 L47 47" fill="none" stroke="#FFFFFF" stroke-width="10"
-        stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Favicon: same geometry, spark enlarged to r5 so it survives at 16px -->
+  <rect class="tile" width="64" height="64" rx="18"/>
+  <path d="M17 23H37L19 44H45" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="48" cy="16" r="5" fill="#FFB224"/>
 </svg>
