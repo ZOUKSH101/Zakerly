@@ -16,8 +16,8 @@ class ProviderInfo {
 
 const providerCatalog = [
   ProviderInfo(id: 'gemini', name: 'Google Gemini', model: 'gemini-flash-latest', available: true),
-  ProviderInfo(id: 'openai', name: 'OpenAI', model: 'Coming soon', available: false),
-  ProviderInfo(id: 'anthropic', name: 'Anthropic Claude', model: 'Coming soon', available: false),
+  ProviderInfo(id: 'openai', name: 'OpenAI', model: 'GPT models', available: false),
+  ProviderInfo(id: 'anthropic', name: 'Anthropic Claude', model: 'Claude models', available: false),
 ];
 
 /// Bring-your-own-key registry. Keys live in memory on this device and are

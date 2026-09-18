@@ -58,7 +58,7 @@ class TutorService extends ChangeNotifier {
       // Nothing relevant in the selected material: answer locally, spend nothing.
       reply
         ..text = 'I couldn\'t find that in your files. '
-            'Try adding more on the right, or use different words from your slides.'
+            'Try words from your slides, or turn on more files in Status.'
         ..pending = false;
       notifyListeners();
       return;
@@ -66,7 +66,7 @@ class TutorService extends ChangeNotifier {
 
     late LlmResponse res;
     final job = scheduler.submit(
-      label: 'Tutor · ${course.code}',
+      label: 'Answer · ${course.code}',
       lane: JobLane.interactive,
       estimatedTokens: plan.promptTokens + 800,
       run: () async {
@@ -94,7 +94,7 @@ class TutorService extends ChangeNotifier {
     } catch (e) {
       reply
         ..failed = true
-        ..text = e is StateError ? e.message : 'That request failed. Try again.';
+        ..text = e is StateError ? e.message : 'I couldn\'t answer that just now. Try sending it again.';
     } finally {
       reply.pending = false;
       notifyListeners();

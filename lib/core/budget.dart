@@ -31,16 +31,16 @@ const plans = {
     maxCourses: 2,
     animationsPerDay: 5,
     priorityProcessing: false,
-    perks: ['2 Canvas courses', '250k tokens / month', '5 new animations / day', 'Off-peak indexing'],
+    perks: ['2 Canvas courses', '250k tokens a month', '5 new animations a day', 'Files processed at night'],
   ),
   PlanTier.pro: Plan(
     name: 'Pro',
-    price: 'Pricing coming soon',
+    price: 'Price coming soon',
     monthlyTokens: 3000000,
     maxCourses: 50,
     animationsPerDay: 100,
     priorityProcessing: true,
-    perks: ['All your courses', '3M tokens / month', '100 new animations / day', 'Faster processing'],
+    perks: ['All your courses', '3M tokens a month', '100 new animations a day', 'Faster processing'],
   ),
 };
 

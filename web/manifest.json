@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#F7F5F3",
     "theme_color": "#C2255C",
-    "description": "Zakerly (ذاكرلي): an AI study tutor that reads your Canvas courses and draws animated explanations.",
+    "description": "Zakerly (ذاكرلي): the study tutor that already read your slides and explains them as many times as you need.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

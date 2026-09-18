@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -33,6 +35,9 @@ class _FadeSlideInState extends State<FadeSlideIn> with SingleTickerProviderStat
     ),
   );
 
+  /// Stagger delay; cancelled on dispose so no timer outlives the widget.
+  Timer? _delay;
+
   double get _translateFraction => (ZMotion.staggerTranslate.inMilliseconds /
           ZMotion.staggerOpacity.inMilliseconds)
       .clamp(0.0, 1.0);
@@ -51,13 +56,14 @@ class _FadeSlideInState extends State<FadeSlideIn> with SingleTickerProviderStat
     }
     final cappedIndex = widget.index.clamp(0, ZMotion.staggerMaxIndex);
     final delay = Duration(milliseconds: cappedIndex * ZMotion.staggerStepMs);
-    Future.delayed(delay, () {
+    _delay = Timer(delay, () {
       if (mounted) _controller.forward();
     });
   }
 
   @override
   void dispose() {
+    _delay?.cancel();
     _controller.dispose();
     super.dispose();
   }

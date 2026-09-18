@@ -158,7 +158,7 @@ class _FilesCard extends StatelessWidget {
               const SizedBox(height: ZSpace.s12),
               Expanded(
                 child: course == null
-                    ? Center(child: Text('No course selected', style: context.type.bodySmall))
+                    ? Center(child: Text('Pick a course to see its files', style: context.type.bodySmall))
                     : LayoutBuilder(
                         builder: (context, constraints) {
                           final fit = _fitRows(
@@ -213,8 +213,8 @@ class _FileRow extends StatelessWidget {
           child: ZIconButton(
             icon: included ? Icons.check_circle : Icons.radio_button_unchecked,
             tooltip: included
-                ? 'Exclude ${file.name} from context'
-                : 'Include ${file.name} in context',
+                ? 'Stop using ${file.name} in answers'
+                : 'Use ${file.name} in answers',
             selected: included,
             onPressed: ready ? () => s.session.toggleFile(file.id) : null,
           ),
@@ -234,10 +234,10 @@ class _StatusDot extends StatelessWidget {
 
   String get _label => switch (status) {
         FileStatus.ready => 'Ready',
-        FileStatus.queued => 'Queued',
-        FileStatus.processing => 'Processing',
-        FileStatus.unprocessed => 'Not processed',
-        FileStatus.failed => 'Failed',
+        FileStatus.queued => 'Waiting',
+        FileStatus.processing => 'Getting ready',
+        FileStatus.unprocessed => 'Not started',
+        FileStatus.failed => 'Couldn\'t read this file',
       };
 
   @override
@@ -290,10 +290,10 @@ class _ProcessingCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Processing', style: context.type.titleMedium),
+                  Text('In progress', style: context.type.titleMedium),
                   ZIconButton(
                     icon: policy.simulateOffPeak ? Icons.bedtime : Icons.bedtime_outlined,
-                    tooltip: 'Simulate off-peak (demo control)',
+                    tooltip: 'Demo: pretend it\'s night (1 to 7 am)',
                     selected: policy.simulateOffPeak,
                     onPressed: () => scheduler.setSimulateOffPeak(!policy.simulateOffPeak),
                   ),

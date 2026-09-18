@@ -73,14 +73,14 @@ class AnimationService {
     }
     if (!budget.canGenerateAnimation) {
       throw AnimationLimitReached(
-          'You\'ve hit today\'s ${budget.plan.animationsPerDay} new animations on ${budget.plan.name}. '
-          'Cached ones are still free.');
+          'You\'ve used all ${budget.plan.animationsPerDay} new animations for today. '
+          'Come back tomorrow. Ones your class already drew still open for free.');
     }
 
     final context = retrieve(concept, course.readyFiles.expand((f) => f.chunks), budgetTokens: 1200);
     late LlmResponse res;
     final job = scheduler.submit(
-      label: 'Animate · ${concept.length > 28 ? '${concept.substring(0, 28)}…' : concept}',
+      label: 'Animation · ${concept.length > 28 ? '${concept.substring(0, 28)}…' : concept}',
       lane: JobLane.interactive,
       estimatedTokens: 4000,
       run: () async {

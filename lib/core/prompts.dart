@@ -15,7 +15,7 @@ class Prompts {
     final base = 'You are Zakerly, a tutor for ${course.code} ${course.name}. '
         'Answer ONLY from the course context provided. If the context does not '
         'contain the answer, say so and name the material the student should check. '
-        'Cite sources inline as [file Â· section]. Reply in the language the student '
+        'Cite sources inline as [file · section]. Reply in the language the student '
         'writes in (Arabic or English). Keep answers short and concrete.';
     final style = switch (mode) {
       StudyMode.explain =>

@@ -41,17 +41,17 @@ class MockLlm implements LlmProvider {
     final s1 = _sentences(first.text);
 
     if (system.contains('MODE: SOCRATIC')) {
-      return 'Let\'s work it out rather than me just telling you.\n\n'
+      return 'Let\'s work this one out together.\n\n'
           'Your notes on ${first.heading} say: "${s1.first}" [${first.file} · ${first.heading}]\n\n'
           'Using that rule, what do you think happens in the case you asked about ("$question"), and why? '
           'Reply with your reasoning and I\'ll check it.';
     }
     if (system.contains('MODE: QUIZ')) {
       final second = sources.length > 1 ? sources[1] : first;
-      return 'Three quick checks from your material:\n\n'
+      return 'Three quick questions from your files:\n\n'
           '1. True or false: ${s1.first}\n'
           '2. In your own words, explain ${first.heading.toLowerCase()}.\n'
-          '3. What is the key idea of "${second.heading}"?\n\n'
+          '3. What is the main point of "${second.heading}"?\n\n'
           'Answer in the chat and I\'ll mark them. [${first.file} · ${first.heading}]';
     }
 
@@ -61,7 +61,7 @@ class MockLlm implements LlmProvider {
       final other = sources[1];
       b.write('\n\nRelated: ${_sentences(other.text).first} [${other.file} · ${other.heading}]');
     }
-    b.write('\n\nWant to see it? Tap Visualize.');
+    b.write('\n\nWant to see it move? Tap the animate button next to Send.');
     return b.toString();
   }
 

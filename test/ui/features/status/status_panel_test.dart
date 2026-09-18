@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:zakerly/core/app_services.dart';
@@ -65,7 +65,7 @@ void main() {
 
     expect(find.text('Syllabus.pdf'), findsOneWidget);
     expect(find.text('Lecture 3.pdf'), findsOneWidget);
-    // The old verbose subtitle ("14.2k Â· Queued"/"Indexed") is gone.
+    // The old verbose subtitle ("14.2k · Queued"/"Indexed") is gone.
     expect(find.textContaining('Queued'), findsNothing);
     expect(find.textContaining('Indexed'), findsNothing);
     expect(find.textContaining('14.2k'), findsNothing);
@@ -86,7 +86,7 @@ void main() {
     await tester.pumpWidget(_harness(s));
     await tester.pump();
 
-    expect(find.text('Processing'), findsNothing);
+    expect(find.text('In progress'), findsNothing);
   });
 
   testWidgets('processing card appears with a Process now button on the Free plan', (
@@ -107,7 +107,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Processing'), findsOneWidget);
+    expect(find.text('In progress'), findsOneWidget);
     expect(find.text('Process now'), findsOneWidget);
     expect(find.text('Pro'), findsNothing);
     expect(find.byIcon(Icons.lock_outline), findsNothing);

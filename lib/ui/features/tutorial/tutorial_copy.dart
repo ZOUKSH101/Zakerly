@@ -21,42 +21,42 @@ final List<TutorialStep> tutorialSteps = [
   TutorialStep(
     target: TutorialTargets.sync,
     title: 'Sync your courses',
-    body: 'Tap sync to pull your courses and files from Canvas.',
+    body: 'Tap Sync to bring in your courses and files from Canvas.',
   ),
   TutorialStep(
     target: TutorialTargets.courses,
     title: 'Pick a course',
-    body: 'Tap a course to open it and start studying.',
+    body: 'Tap one to open it.',
   ),
   TutorialStep(
     target: TutorialTargets.files,
-    title: 'Choose what it reads',
-    body: "Pick the files you want. That's all the tutor sees.",
+    title: 'Choose what I read',
+    body: 'I only use the files you tick here.',
   ),
   TutorialStep(
     target: TutorialTargets.modes,
-    title: 'Ask your way',
-    body: 'Explain gives you the answer. Guide me helps you figure it out '
-        'yourself. Quiz me tests you.',
+    title: 'Pick how I help',
+    body: 'Explain gives you a clear answer. Guide me gives you hints so you '
+        'work it out. Quiz me tests you.',
   ),
   TutorialStep(
     target: TutorialTargets.composer,
-    title: 'Type your question',
-    body: 'Ask anything about your course material here.',
+    title: 'Ask your question',
+    body: "Ask anything from your slides. I'll show which file each answer came from.",
   ),
   TutorialStep(
     target: TutorialTargets.visualize,
-    title: "Watch it, not just read it",
-    body: 'Turn any answer into a short animation.',
+    title: 'Watch it move',
+    body: 'Turn my last answer into a short animation.',
   ),
   TutorialStep(
     target: TutorialTargets.budget,
-    title: 'Keep an eye on your budget',
-    body: 'See what you have left, right here.',
+    title: 'Your budget',
+    body: 'This is how much you have left this month.',
   ),
   TutorialStep(
     target: TutorialTargets.settings,
-    title: 'Add your own key',
-    body: 'Need more room? Add your own key any time.',
+    title: 'Plans and keys',
+    body: 'Need more? Switch plans or add your own API key here.',
   ),
 ];

@@ -58,12 +58,12 @@ void main() {
       await tester.pump();
 
       expect(
-        find.text('Hi! Ask me anything about CS1. I\'ll answer using your course files.'),
+        find.text('Hi! Ask me anything about CS1. I\'ll answer from your course files.'),
         findsOneWidget,
       );
-      expect(find.text('Summarize the key ideas'), findsOneWidget);
+      expect(find.text('Sum up the main ideas'), findsOneWidget);
       expect(find.text('Quiz me on this week'), findsOneWidget);
-      expect(find.text('Explain the hardest concept'), findsOneWidget);
+      expect(find.text('Explain the hardest part'), findsOneWidget);
 
       expect(
         find.text('Getting CS1 ready. You can ask about the files that are done.'),
@@ -90,7 +90,6 @@ void main() {
     final course = _course(id: 'c1', code: 'CS1', files: [file]);
 
     final s = AppServices.demo();
-    addTearDown(s.scheduler.dispose);
     s.courses.courses = [course];
     s.session.selectCourse(course.id);
     // Deterministic "waiting" state, independent of the real wall clock.
@@ -110,6 +109,10 @@ void main() {
     await tester.pump();
 
     expect(job.lane, JobLane.interactive);
+
+    // The job never gets a slot (maxConcurrent = 0), so stop the pacing
+    // timer before the binding checks for pending timers.
+    s.scheduler.dispose();
   });
 
   testWidgets('tutorial anchors are attached to the mode switch, composer and visualize control', (

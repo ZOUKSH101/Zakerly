@@ -34,7 +34,7 @@ class CourseFile {
   /// 'pdf' | 'slides' | 'assignment' | 'page'
   final String kind;
 
-  /// Size of the full file once extracted â€” what a student would paste into
+  /// Size of the full file once extracted, which is what a student would paste into
   /// a chatbot without Zakerly.
   final int sourceTokens;
 
@@ -72,6 +72,13 @@ extension StudyModeLabel on StudyMode {
         StudyMode.explain => 'Explain',
         StudyMode.socratic => 'Guide me',
         StudyMode.quiz => 'Quiz me',
+      };
+
+  /// Short hint shown as the mode switch tooltip.
+  String get tooltip => switch (this) {
+        StudyMode.explain => 'Get a clear answer',
+        StudyMode.socratic => 'Work it out with hints',
+        StudyMode.quiz => 'Test yourself',
       };
 }
 

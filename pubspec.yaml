@@ -1,5 +1,5 @@
 name: zakerly
-description: "Zakerly â€” a GenAI study workspace connected to your LMS."
+description: "Zakerly: a study tutor that reads your Canvas courses."
 publish_to: 'none'
 version: 0.1.0+1
 

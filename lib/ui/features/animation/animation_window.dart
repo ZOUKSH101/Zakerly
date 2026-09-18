@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -47,7 +47,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
     _future.then((_) {
       if (mounted) setState(() => _loaded = true);
     }).catchError((_) {
-      // Swallow — the FutureBuilder below renders the error state.
+      // Swallow: the FutureBuilder below renders the error state.
     });
   }
 
@@ -62,8 +62,8 @@ class _AnimationWindowState extends State<_AnimationWindow> {
       child: ZDialogFrame(
         title: widget.concept,
         subtitle: '${widget.course.code} · ${widget.course.name}',
-        width: math.max(0.0, math.min(900.0, size.width - 2 * ZSpace.s24)),
-        height: math.max(0.0, math.min(580.0, size.height - 2 * ZSpace.s24)),
+        width: math.max(0.0, math.min(1280.0, size.width - 2 * ZSpace.s24)),
+        height: math.max(0.0, math.min(880.0, size.height - 2 * ZSpace.s24)),
         actions: [
           ZIconButton(
             icon: Icons.replay,
@@ -79,7 +79,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
               return Semantics(
                 liveRegion: true,
                 excludeSemantics: true,
-                label: 'Drawing your animation. Checking the shared cache first',
+                label: 'Drawing your animation. Checking if your class already has one',
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -92,7 +92,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
                       ),
                       const SizedBox(height: ZSpace.s4),
                       Text(
-                        'Checking the shared cache first',
+                        'Checking if your class already has one',
                         style: context.type.bodySmall?.copyWith(color: z.textTertiary),
                       ),
                     ],
@@ -107,7 +107,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
                   liveRegion: true,
                   child: ZEmpty(
                     icon: Icons.hourglass_empty,
-                    title: 'Daily limit reached',
+                    title: 'That\'s all for today',
                     message: error.message,
                     action: const ZBadge(label: 'Pro: 100 a day', tone: ZBadgeTone.accent),
                   ),
@@ -118,7 +118,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
                 child: const ZEmpty(
                   icon: Icons.error_outline,
                   title: "Couldn't draw that",
-                  message: 'Try again, or rephrase the concept.',
+                  message: 'Try again, or ask the question a different way.',
                 ),
               );
             }
@@ -144,8 +144,8 @@ class _Result extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Flexible(
-          fit: FlexFit.loose,
+        SizedBox(
+          width: double.infinity,
           child: Semantics(
             liveRegion: true,
             child: Row(
@@ -154,18 +154,20 @@ class _Result extends StatelessWidget {
                   ZBadge(
                     tone: ZBadgeTone.success,
                     icon: Icons.bolt,
-                    label: 'From cache · saved ${formatTokens(result.tokens)} tokens',
+                    label: 'Saved ${formatTokens(result.tokens)} tokens',
                   )
                 else
                   ZBadge(
                     tone: ZBadgeTone.accent,
                     icon: Icons.auto_awesome,
-                    label: 'Generated · ${formatTokens(result.tokens)} tokens',
+                    label: 'Used ${formatTokens(result.tokens)} tokens',
                   ),
                 const SizedBox(width: ZSpace.s8),
                 Flexible(
                   child: Text(
-                    'Cached for everyone in ${course.code}',
+                    result.fromCache
+                        ? 'Already drawn for your class'
+                        : 'Now free for everyone in ${course.code}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.type.bodySmall?.copyWith(color: z.textTertiary),

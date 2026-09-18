@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import '../util.dart';
 
@@ -115,8 +115,8 @@ String _jsStringArray(List<String> items) {
   final s = jsonEncode(items);
   return s
       .replaceAll('</', '<\\/')
-      .replaceAll('â€¨', '\\u2028')
-      .replaceAll('â€©', '\\u2029');
+      .replaceAll('\u2028', '\\u2028')
+      .replaceAll('\u2029', '\\u2029');
 }
 
 String _shell({
@@ -276,7 +276,7 @@ const _growthCaptions = [
 
 String growthAnimation(String concept) => _shell(
       title: concept,
-      sub: 'EGP 1,000 growing at 20% a year, simple interest compared with compound interest.',
+      sub: 'EGP 1,000 at 20% a year: simple interest next to compound interest.',
       css: _growthCss,
       body: _growthBody,
       captions: _growthCaptions,
@@ -313,18 +313,18 @@ function applyStep(step) {
 String keyPointsAnimation(String concept, List<(String, String)> points) {
   final list = points.isEmpty
       ? const [
-          ('Key idea', 'Add course files to see ideas pulled from your material.'),
+          ('No files yet', 'Turn on some course files and I\'ll pull the main ideas from them.'),
         ]
       : points.take(6).toList();
 
   final items = list
       .map((p) => '<li><b>${htmlEscape(p.$1)}</b><span>${htmlEscape(p.$2)}</span></li>')
       .join();
-  final captions = [for (final p in list) 'This idea just appeared: ${p.$1}.'];
+  final captions = [for (final (i, p) in list.indexed) 'Idea ${i + 1}: ${p.$1}.'];
 
   return _shell(
     title: concept,
-    sub: 'The key ideas from your material, one at a time.',
+    sub: 'The main ideas from your files, one at a time.',
     css: _keyPointsCss,
     body: '<ol id="list">$items</ol>',
     captions: captions,

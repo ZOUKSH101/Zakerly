@@ -49,10 +49,18 @@ class SchedulerPolicy {
         : h >= offPeakStartHour || h < offPeakEndHour;
   }
 
-  String get windowLabel =>
-      '${_hh(offPeakStartHour)}â€“${_hh(offPeakEndHour)}';
+  /// Plain-words window, e.g. "1 to 7 am" or "10 pm to 6 am".
+  String get windowLabel {
+    final start = _hour(offPeakStartHour);
+    final end = _hour(offPeakEndHour);
+    return start.$2 == end.$2 ? '${start.$1} to ${end.$1} ${end.$2}' : '${start.$1} ${start.$2} to ${end.$1} ${end.$2}';
+  }
 
-  static String _hh(int h) => '${h.toString().padLeft(2, '0')}:00';
+  static (int, String) _hour(int h) {
+    final hh = h % 24;
+    final twelve = hh % 12 == 0 ? 12 : hh % 12;
+    return (twelve, hh < 12 ? 'am' : 'pm');
+  }
 }
 
 /// Our own pacing layer in front of every model call. Live questions go
@@ -63,6 +71,9 @@ class RequestScheduler extends ChangeNotifier {
 
   final BudgetController budget;
   final policy = SchedulerPolicy();
+
+  static const _outOfBudget =
+      'You\'ve used this month\'s budget. Change your plan or key in Settings to keep going.';
   final List<Job> _jobs = [];
   final List<DateTime> _starts = [];
   Timer? _timer; // Ticks only while jobs are waiting.
@@ -123,7 +134,7 @@ class RequestScheduler extends ChangeNotifier {
       if (runningCount >= policy.maxConcurrent) {
         reason = 'Waiting for a free slot';
       } else if (_starts.length >= policy.requestsPerMinute) {
-        reason = 'Pacing at ${policy.requestsPerMinute}/min';
+        reason = 'Keeping to ${policy.requestsPerMinute} requests a minute';
       } else if (background && liveWaiting) {
         reason = 'Letting your questions go first';
       } else if (background && !offPeak && runningCount > 0) {
@@ -133,9 +144,9 @@ class RequestScheduler extends ChangeNotifier {
       } else if (!budget.canSpend(job.estimatedTokens)) {
         job
           ..state = JobState.failed
-          ..error = 'Not enough budget left'
+          ..error = _outOfBudget
           ..finishedAt = now;
-        job._completer.completeError(StateError('Not enough budget left'));
+        job._completer.completeError(StateError(_outOfBudget));
         changed = true;
         continue;
       } else {

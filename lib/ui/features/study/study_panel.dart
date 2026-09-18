@@ -213,6 +213,7 @@ class _StudyPanelState extends State<StudyPanel> {
         final segmented = ZSegmented<StudyMode>(
           key: TutorialTargets.modes,
           segments: [for (final m in StudyMode.values) (m, m.label)],
+          tooltips: [for (final m in StudyMode.values) m.tooltip],
           selected: s.session.mode,
           onChanged: s.session.setMode,
         );
@@ -283,7 +284,7 @@ class _StudyPanelState extends State<StudyPanel> {
         final z = context.z;
         return Semantics(
           button: true,
-          label: 'Budget: ${formatTokens(s.budget.remaining)} tokens left. Open status',
+          label: 'Budget: ${formatTokens(s.budget.remaining)} tokens left. Open Status',
           child: Pressable(
             onTap: widget.onOpenStatus,
             child: Glass(
@@ -340,8 +341,8 @@ class _StudyPanelState extends State<StudyPanel> {
     if (!course.hasStarted && !s.ingestion.canIndex(course)) {
       return _buildNote(
         context,
-        text: 'Your plan processes one course at a time. Switch your active course in '
-            'Status when you\'re ready for this one.',
+        text: 'The ${s.budget.plan.name} plan covers ${s.budget.plan.maxCourses} courses. '
+            'Switch to Pro in Settings to open this one.',
       );
     }
     return null;
@@ -380,7 +381,7 @@ class _StudyPanelState extends State<StudyPanel> {
       return const ZEmpty(
         icon: Icons.school_outlined,
         title: 'Sync your courses to start',
-        message: 'Hit Sync on the left. We\'ll pull in your slides and readings.',
+        message: 'Tap Sync next to Canvas and I\'ll bring in your slides and readings.',
       );
     }
 
@@ -442,9 +443,9 @@ class _StudyPanelState extends State<StudyPanel> {
   Widget _buildEmptyThread(BuildContext context, Course course) {
     final z = context.z;
     const suggestions = [
-      'Summarize the key ideas',
+      'Sum up the main ideas',
       'Quiz me on this week',
-      'Explain the hardest concept',
+      'Explain the hardest part',
     ];
     return Align(
       alignment: Alignment.topLeft,
@@ -461,7 +462,7 @@ class _StudyPanelState extends State<StudyPanel> {
                 children: [
                   Text(
                     'Hi! Ask me anything about ${course.code}. '
-                    'I\'ll answer using your course files.',
+                    'I\'ll answer from your course files.',
                     style: context.type.bodyLarge?.copyWith(color: z.text),
                   ),
                   const SizedBox(height: ZSpace.s16),
@@ -561,12 +562,9 @@ class _StudyPanelState extends State<StudyPanel> {
       TextSpan(
         style: context.type.bodySmall?.copyWith(color: z.textSecondary),
         children: [
+          TextSpan(text: '${formatTokens(msg.tokens)} tokens · '),
           TextSpan(
-            text: '${formatTokens(msg.tokens)} tokens · '
-                'full files: ${formatTokens(msg.naiveTokens)} · ',
-          ),
-          TextSpan(
-            text: '$saved% saved',
+            text: '$saved% less than sending the full files',
             style: TextStyle(color: z.successText),
           ),
         ],
@@ -600,16 +598,17 @@ class _StudyPanelState extends State<StudyPanel> {
     Color captionColor = z.textSecondary;
     if (text.trim().isEmpty) {
       caption = included.isEmpty
-          ? 'Ask away. I\'ll answer with what I know so far.'
-          : 'Using ${included.length} files. Change them in Status.';
+          ? 'Your files aren\'t ready yet. You can still ask.'
+          : 'Using ${_count(included.length, 'file')}. Change them in Status.';
     } else {
       final plan = s.tutor.plan(course, included, text, s.session.mode);
       if (plan.chunks.isEmpty) {
-        caption = 'Nothing in your files matches that. You won\'t spend any tokens.';
+        caption = 'Nothing in your files matches that, so this one is free.';
         captionColor = z.warning;
       } else {
-        caption = '~${formatTokens(plan.promptTokens)} tokens from ${plan.chunks.length} sections '
-            '· full files would be ${formatTokens(plan.naiveTokens)}';
+        caption = 'About ${formatTokens(plan.promptTokens)} tokens from '
+            '${_count(plan.chunks.length, 'section')}. '
+            'The full files would cost ${formatTokens(plan.naiveTokens)}.';
       }
     }
 
@@ -636,7 +635,7 @@ class _StudyPanelState extends State<StudyPanel> {
             ZIconButton(
               key: TutorialTargets.visualize,
               icon: Icons.auto_awesome_motion,
-              tooltip: 'Visualize the last answer',
+              tooltip: 'Animate the last answer',
               onPressed: canVisualize ? () => widget.onVisualize(course, lastConcept!) : null,
             ),
             const SizedBox(width: ZSpace.s8),
@@ -659,6 +658,9 @@ class _StudyPanelState extends State<StudyPanel> {
     );
   }
 }
+
+/// "1 file", "3 files".
+String _count(int n, String noun) => '$n $noun${n == 1 ? '' : 's'}';
 
 String _stripExtension(String fileName) {
   final dot = fileName.lastIndexOf('.');

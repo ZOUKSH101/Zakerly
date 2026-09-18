@@ -320,17 +320,17 @@ class _CourseTile extends StatelessWidget {
       trailing = const ZBadge(
         tone: ZBadgeTone.warning,
         icon: Icons.lock_outline,
-        label: 'Locked · Pro',
+        label: 'Pro',
       );
     } else if (failed > 0) {
-      statusText = '$failed failed';
+      statusText = '$failed didn\'t load';
       statusColor = z.danger;
     } else {
       statusText = '$ready/$total ready';
     }
 
     final lockedSuffix = (!course.hasStarted && !canIndex)
-        ? '. Free plan covers ${s.budget.plan.maxCourses} courses.'
+        ? '. The ${s.budget.plan.name} plan covers ${s.budget.plan.maxCourses} courses'
         : '';
     final semanticsLabel =
         '${course.name}, ${course.code}, $statusText$lockedSuffix${selected ? ', selected' : ''}';

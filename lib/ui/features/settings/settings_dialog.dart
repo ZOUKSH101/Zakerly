@@ -29,7 +29,6 @@ Future<void> showSettingsDialog(BuildContext context) {
         label: 'Settings',
         child: ZDialogFrame(
           title: 'Settings',
-          subtitle: 'Plan, model keys and account',
           width: width,
           height: height,
           child: const _SettingsBody(),
@@ -142,7 +141,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         _planCard(context, s, PlanTier.pro),
         const SizedBox(height: ZSpace.s12),
         Text(
-          "Payments aren't hooked up in this demo yet.",
+          "This is a demo, so switching plans is free.",
           style: context.type.bodySmall,
         ),
       ],
@@ -205,7 +204,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         const ZEyebrow('Model keys'),
         const SizedBox(height: ZSpace.s8),
         Text(
-          'Bring your own key. It stays on this device, sent straight to the provider.',
+          'Have your own API key? It stays on this device and only goes to that provider.',
           style: context.type.bodySmall,
         ),
         const SizedBox(height: ZSpace.s12),
@@ -215,7 +214,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         const SizedBox(height: ZSpace.s12),
         ZSwitchRow(
           title: 'Use my own key',
-          subtitle: 'Spend from your key instead of your plan',
+          subtitle: 'Pay with your key instead of your plan\'s budget',
           value: s.budget.useOwnKey,
           onChanged: s.providers.hasKey(s.providers.activeId) ? s.budget.setUseOwnKey : null,
         ),
@@ -344,7 +343,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
   Widget _capSlider(BuildContext context, AppServices s) {
     final index = _nearestCapIndex(s.budget.ownKeyCap);
     return Semantics(
-      label: 'Monthly token cap',
+      label: 'Monthly cap',
       child: Slider(
         value: index.toDouble(),
         min: 0,
@@ -420,7 +419,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
           trailing: const ZBadge(label: 'Connected (demo)', tone: ZBadgeTone.success),
         ),
         const SizedBox(height: ZSpace.s16),
-        const ZEyebrow('Shared cache'),
+        const ZEyebrow('Shared with your class'),
         const SizedBox(height: ZSpace.s8),
         ZCard(
           child: Column(
@@ -429,9 +428,9 @@ class _SettingsBodyState extends State<_SettingsBody> {
             children: [
               Row(
                 children: [
-                  _cacheStat(context, 'Hits', '${cache.hits}'),
-                  _cacheStat(context, 'Misses', '${cache.misses}'),
-                  _cacheStat(context, 'Hit rate', '${(cache.hitRate * 100).round()}%'),
+                  _cacheStat(context, 'Reused', '${cache.hits}'),
+                  _cacheStat(context, 'Made new', '${cache.misses}'),
+                  _cacheStat(context, 'Reuse rate', '${(cache.hitRate * 100).round()}%'),
                 ],
               ),
               const SizedBox(height: ZSpace.s8),

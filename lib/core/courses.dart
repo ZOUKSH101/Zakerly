@@ -41,7 +41,8 @@ class CourseRepository extends ChangeNotifier {
       ];
       lastSynced = DateTime.now();
     } catch (e) {
-      error = '$e';
+      debugPrint('Canvas sync failed: $e');
+      error = 'Canvas isn\'t answering right now. Try Sync again in a bit.';
     } finally {
       syncing = false;
       notifyListeners();
