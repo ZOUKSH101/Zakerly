@@ -3,6 +3,8 @@ import 'dart:js_interop';
 import 'package:flutter/widgets.dart';
 import 'package:web/web.dart' as web;
 
+import 'package:zakerly/core/animations.dart' show withHostedFlag;
+
 /// Injects a network-blocking Content-Security-Policy `<meta>` tag into
 /// [html], and strips any `<meta http-equiv="refresh">` tag (which could
 /// otherwise navigate the frame to an external URL, bypassing the CSP).
@@ -74,7 +76,12 @@ class HtmlFrameController {
 /// [ValueKey] derived from the content) rather than relying on rebuilds.
 ///
 /// [onMessage] receives string messages the document posts to its parent
-/// (only from this frame's own window, only strings in [acceptedMessages]).
+/// (only from this frame's own window, only strings in [acceptedMessages]
+/// or starting with one of [acceptedPrefixes], at most 2000 characters; the
+/// receiver still validates prefixed payloads, e.g. `AnimationStep.parse`).
+///
+/// When [hostedAttribute] is set, it is added to the document's `<html>`
+/// element (see [withHostedFlag]).
 class HtmlFrame extends StatefulWidget {
   const HtmlFrame({
     super.key,
@@ -84,6 +91,8 @@ class HtmlFrame extends StatefulWidget {
     this.controller,
     this.onMessage,
     this.acceptedMessages = const {},
+    this.acceptedPrefixes = const {},
+    this.hostedAttribute,
   });
 
   final String html;
@@ -98,6 +107,10 @@ class HtmlFrame extends StatefulWidget {
   final HtmlFrameController? controller;
   final ValueChanged<String>? onMessage;
   final Set<String> acceptedMessages;
+  final Set<String> acceptedPrefixes;
+  final String? hostedAttribute;
+
+  static const maxMessageLength = 2000;
 
   @override
   State<HtmlFrame> createState() => _HtmlFrameState();
@@ -125,7 +138,9 @@ class _HtmlFrameState extends State<HtmlFrame> {
     final data = event.data;
     if (data == null || !data.isA<JSString>()) return;
     final text = (data as JSString).toDart;
-    if (!widget.acceptedMessages.contains(text)) return;
+    if (text.length > HtmlFrame.maxMessageLength) return;
+    final known = widget.acceptedMessages.contains(text) || widget.acceptedPrefixes.any(text.startsWith);
+    if (!known) return;
     widget.onMessage?.call(text);
   }
 
@@ -140,7 +155,10 @@ class _HtmlFrameState extends State<HtmlFrame> {
         final listener = ((web.MessageEvent m) => _onWindowMessage(m)).toJS;
         _listener = listener;
         web.window.addEventListener('message', listener);
-        final sandboxedHtml = withNoNetworkCsp(widget.html);
+        final hosted = widget.hostedAttribute;
+        final sandboxedHtml = withNoNetworkCsp(
+          hosted == null ? widget.html : withHostedFlag(widget.html, attribute: hosted),
+        );
         var loadCount = 0;
         var blocked = false;
 
@@ -160,9 +178,10 @@ class _HtmlFrameState extends State<HtmlFrame> {
         iframe.setAttribute('srcdoc', sandboxedHtml);
         iframe.setAttribute('title', widget.title);
         // The frame stays in the Tab order so keyboard users can reach the
-        // player's own buttons. Esc still closes the window from inside:
-        // the document posts AnimationMessages.escape to us (see onMessage),
-        // and the dialog footer mirrors Back / Play / Next in Flutter.
+        // document (its arrow keys, and its own buttons when it isn't
+        // hosted). Esc still closes the window from inside: the document
+        // posts AnimationMessages.escape to us (see onMessage). When hosted,
+        // the dialog footer is the only Back / Play / Next.
         iframe.tabIndex = 0;
         iframe.style.border = '0';
         iframe.style.width = '100%';

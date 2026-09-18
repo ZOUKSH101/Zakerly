@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'budget.dart';
 import 'cache.dart';
 import 'models.dart';
@@ -116,8 +118,9 @@ class AnimationCopy {
 
 /// Messages between the app and the animation frame (window.postMessage,
 /// plain strings). The app sends [back], [next] and [toggle]; the document
-/// sends [escape] when Esc is pressed inside it, and [playing] / [paused]
-/// when its player changes state.
+/// sends [escape] when Esc is pressed inside it, [playing] / [paused] when
+/// its player changes state, and a step report (see [stepPrefix]) every
+/// time it shows a step.
 abstract final class AnimationMessages {
   static const back = 'zakerly:back';
   static const next = 'zakerly:next';
@@ -125,6 +128,93 @@ abstract final class AnimationMessages {
   static const escape = 'zakerly:escape';
   static const playing = 'zakerly:playing';
   static const paused = 'zakerly:paused';
+
+  /// A step report is this prefix followed by a JSON object with exactly
+  /// the keys `step` (1-based int), `total` (int) and `caption` (string),
+  /// e.g. `zakerly:step:{"step":1,"total":5,"caption":"..."}`. Parse it
+  /// with [AnimationStep.parse].
+  static const stepPrefix = 'zakerly:step:';
+
+  /// The attribute the host sets on the document's `<html>` element. A
+  /// hosted document hides its own controls and caption (the app's footer
+  /// shows them); opened standalone, the attribute is absent and the
+  /// document's own controls work as usual.
+  static const hostedAttribute = 'data-hosted';
+}
+
+/// Marks [html] as hosted by the app: adds [attribute] (by default
+/// [AnimationMessages.hostedAttribute]) to its `<html>` start tag, so the
+/// document's CSS can hide its own controls while the app's footer shows
+/// them. A document with no `<html>` tag gets one right after its doctype
+/// (or at the start); the parser folds that tag's attributes into the root
+/// element either way. Idempotent.
+String withHostedFlag(String html, {String attribute = AnimationMessages.hostedAttribute}) {
+  final tag = RegExp(r'<html(?=[\s>/])([^>]*)>', caseSensitive: false).firstMatch(html);
+  if (tag != null) {
+    final attrs = tag[1]!;
+    final present = RegExp('(?:^|\\s)${RegExp.escape(attribute)}(?=[\\s=>/]|\$)', caseSensitive: false);
+    if (present.hasMatch(attrs)) return html;
+    return '${html.substring(0, tag.start)}<html $attribute$attrs>${html.substring(tag.end)}';
+  }
+  final lead = RegExp(r'^\s*(?:<!--[\s\S]*?-->\s*)*<!doctype[^>]*>', caseSensitive: false)
+      .firstMatch(html);
+  final at = lead?.end ?? 0;
+  return '${html.substring(0, at)}<html $attribute>${html.substring(at)}';
+}
+
+/// The step a hosted animation document reports it is showing.
+class AnimationStep {
+  const AnimationStep({required this.step, required this.total, required this.caption});
+
+  /// 1-based.
+  final int step;
+  final int total;
+  final String caption;
+
+  static const _maxLength = 2000;
+  static const _maxCaption = 400;
+  static const _maxSteps = 200;
+
+  /// Parses a step report, or returns null for anything that is not exactly
+  /// the fixed shape: prefix, JSON object with only `step`, `total` and
+  /// `caption`, 1 <= step <= total <= 200. Captions are trimmed and capped.
+  static AnimationStep? parse(String message) {
+    if (!message.startsWith(AnimationMessages.stepPrefix) || message.length > _maxLength) {
+      return null;
+    }
+    final Object? data;
+    try {
+      data = jsonDecode(message.substring(AnimationMessages.stepPrefix.length));
+    } on FormatException {
+      return null;
+    }
+    if (data is! Map<String, dynamic> || data.length != 3) return null;
+    final step = data['step'], total = data['total'], caption = data['caption'];
+    if (step is! int || total is! int || caption is! String) return null;
+    if (step < 1 || total < step || total > _maxSteps) return null;
+    final text = caption.trim();
+    return AnimationStep(
+      step: step,
+      total: total,
+      caption: text.length > _maxCaption ? '${text.substring(0, _maxCaption)}…' : text,
+    );
+  }
+}
+
+/// Course context for an animation of [concept]. Course-wide asks ("Sum up
+/// the main ideas") name no specific term, so keyword retrieval finds one
+/// stray chunk at best; those get the opening sections of every ready file
+/// (the same overview the tutor uses) topped up with whatever retrieval
+/// found, so the key-ideas animation has several ideas to show.
+List<Chunk> animationContext(String concept, List<CourseFile> files) {
+  final hits = retrieve(concept, files.expand((f) => f.chunks), budgetTokens: 1200);
+  if (!isBroadRequest(concept)) return hits;
+  final picked = overviewChunks(files, max: 5, depth: 5);
+  for (final c in hits) {
+    if (picked.length >= 5) break;
+    if (!picked.contains(c)) picked.add(c);
+  }
+  return picked;
 }
 
 /// The set of canned animation shapes the mock (and, by contract, the real
@@ -172,7 +262,8 @@ class AnimationService {
     AppLanguage language = AppLanguage.english,
     AnimationTheme theme = AnimationTheme.light,
   }) async {
-    final key = 'animation:v2:${course.id}:${language.code}:${theme.name}:${conceptKey(concept)}';
+    // v3: documents hide their own controls when hosted and report steps.
+    final key = 'animation:v3:${course.id}:${language.code}:${theme.name}:${conceptKey(concept)}';
     final hit = await cache.lookup(key);
     if (hit != null) {
       return AnimationResult(concept: concept, html: hit.value, tokens: hit.tokenCost, fromCache: true);
@@ -184,7 +275,7 @@ class AnimationService {
           perDay: budget.plan.animationsPerDay);
     }
 
-    final context = retrieve(concept, course.readyFiles.expand((f) => f.chunks), budgetTokens: 1200);
+    final context = animationContext(concept, course.readyFiles.toList());
     late LlmResponse res;
     final short = concept.length > 28 ? '${concept.substring(0, 28)}…' : concept;
     final job = scheduler.submit(

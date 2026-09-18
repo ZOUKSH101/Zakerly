@@ -7,9 +7,11 @@ import '../util.dart';
 // Canned animations standing in for model output. Each obeys the same
 // contract the real prompt imposes on Gemini (see Prompts.animationSystemFor):
 // one self-contained document, no network, responsive fill, a step-by-step
-// player with Back/Play/Next controls and a caption per step, the app's
-// language and direction, the app theme's palette (not prefers-color-scheme),
-// the AnimationMessages postMessage protocol, and no em or en dashes.
+// player with Back/Play/Next controls and a caption per step (hidden when the
+// host sets data-hosted on <html>, since the app's footer shows them), step 1
+// on screen from the first paint, the app's language and direction, the app
+// theme's palette (not prefers-color-scheme), the AnimationMessages
+// postMessage protocol including step reports, and no em or en dashes.
 
 const _baseCss = r'''
 *{box-sizing:border-box}
@@ -30,6 +32,9 @@ main{min-height:0;display:flex;align-items:center;justify-content:center}
 .controls button#play{background:var(--accent);border-color:var(--accent);color:#fff}
 .controls button:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px}
 .counter{margin-inline-start:auto;color:var(--muted);font-size:clamp(12px,1.5vmin,14px)}
+html[data-hosted] .controls,html[data-hosted] .caption{display:none}
+html[data-hosted] .stage{grid-template-rows:auto 1fr}
+html.first *{transition:none!important}
 ''';
 
 const _shellTemplate = r'''
@@ -64,6 +69,8 @@ const els = {
   counter: document.getElementById('counter'),
   caption: document.getElementById('caption')
 };
+// window.parent, not bare `parent`: a template's setup may declare its own.
+function tell(msg) { try { if (window.parent !== window) { window.parent.postMessage(msg, '*'); } } catch (_) {} }
 function show(n) {
   i = Math.max(0, Math.min(total - 1, n));
   applyStep(i);
@@ -71,11 +78,11 @@ function show(n) {
   els.counter.textContent = L.step.replace('{i}', i + 1).replace('{n}', total);
   els.back.disabled = i === 0;
   els.next.disabled = i === total - 1;
+  tell('zakerly:step:' + JSON.stringify({ step: i + 1, total: total, caption: captions[i] }));
   if (i === total - 1) { pause(); }
 }
 function next() { show(i + 1); }
 function back() { show(i - 1); }
-function tell(msg) { try { parent.postMessage(msg, '*'); } catch (_) {} }
 function pause() {
   const was = playing;
   playing = false;
@@ -110,7 +117,13 @@ window.addEventListener('message', function (e) {
   else if (e.data === 'zakerly:next') { next(); }
   else if (e.data === 'zakerly:toggle') { toggle(); }
 });
+// Step 1 is on screen from the very first paint: no entrance transition
+// until two frames after load.
+document.documentElement.classList.add('first');
 show(0);
+requestAnimationFrame(function () {
+  requestAnimationFrame(function () { document.documentElement.classList.remove('first'); });
+});
 </script>
 </body></html>''';
 
@@ -181,19 +194,21 @@ line.on{opacity:1}
 }
 ''';
 
-const _bstBody = '<svg id="tree" viewBox="0 0 800 460" preserveAspectRatio="xMidYMid meet"></svg>';
+// The viewBox hugs the tree (nodes span y 46..314) so it sits centred in the
+// stage instead of hanging from the top with empty space below.
+const _bstBody = '<svg id="tree" viewBox="0 20 800 320" preserveAspectRatio="xMidYMid meet"></svg>';
 
 const _bstSetup = r'''
 const pos = {50:[400,80],30:[220,180],70:[580,180],20:[130,280],40:[310,280],60:[490,280],80:[670,280]};
-const parent = {30:50,70:50,20:30,40:30,60:70,80:70};
+const up = {30:50,70:50,20:30,40:30,60:70,80:70};
 const order = [50,30,70,20,40,60,80];
 const svg = document.getElementById('tree');
 const ns = 'http://www.w3.org/2000/svg';
 const nodes = {}, lines = {};
 for (const k of order) {
-  if (parent[k]) {
+  if (up[k]) {
     const l = document.createElementNS(ns, 'line');
-    const a = pos[parent[k]], c = pos[k];
+    const a = pos[up[k]], c = pos[k];
     l.setAttribute('x1', a[0]); l.setAttribute('y1', a[1]);
     l.setAttribute('x2', c[0]); l.setAttribute('y2', c[1]);
     svg.appendChild(l); lines[k] = l;
@@ -208,21 +223,19 @@ for (const k of order) {
 }
 function applyStep(step) {
   for (const k of order) { nodes[k].classList.remove('path'); }
-  const shown = order.slice(0, step);
+  // Step 1 already shows the root, so the first frame is never empty.
+  const shown = order.slice(0, step + 1);
   for (const k of order) {
     const on = shown.indexOf(k) !== -1;
     nodes[k].classList.toggle('on', on);
     if (lines[k]) { lines[k].classList.toggle('on', on); }
   }
-  if (step > 0) {
-    let c = parent[order[step - 1]];
-    while (c) { nodes[c].classList.add('path'); c = parent[c]; }
-  }
+  let c = up[order[step]];
+  while (c) { nodes[c].classList.add('path'); c = up[c]; }
 }
 ''';
 
 const _bstCaptions = [
-  'Start with an empty tree.',
   'Insert 50. It becomes the root.',
   'Insert 30. It is less than 50, so it goes to the left.',
   'Insert 70. It is greater than 50, so it goes to the right.',
@@ -328,16 +341,19 @@ String growthAnimation(
 const _keyPointsCss = r'''
 main{align-items:center;justify-content:center;overflow:hidden}
 ol{list-style:none;margin:0 auto;padding:0;counter-reset:k;display:grid;gap:clamp(12px,2.6vmin,28px);
-align-content:center;width:min(100%,62em);font-size:clamp(15px,2.3vmin,24px)}
-li{counter-increment:k;display:grid;grid-template-columns:auto 1fr;column-gap:1em;align-items:start;opacity:0;
+align-content:center;width:min(100%,62em);font-size:clamp(16px,2.6vmin,26px);text-align:start}
+/* Badge and title share the first row (start-aligned, mirrored in RTL by
+   the grid itself); the body sits under the title, not under the badge. */
+li{counter-increment:k;display:grid;grid-template-columns:auto minmax(0,1fr);
+grid-template-areas:"num title" ". body";column-gap:.8em;align-items:center;opacity:0;
 transform:translateY(16px);transition:transform .4s cubic-bezier(0,0,.5,1),opacity .4s ease}
 li.on{opacity:.55;transform:none}
 li.current{opacity:1}
 li.current b{color:var(--accent-text)}
-li::before{content:counter(k);width:2.2em;height:2.2em;border-radius:50%;display:grid;
+li::before{grid-area:num;content:counter(k);width:2.2em;height:2.2em;border-radius:50%;display:grid;
 place-items:center;background:var(--accent-weak);color:var(--accent-text);font-weight:700;font-size:.9em}
-li b{display:block;font-size:1.25em;line-height:1.2;font-weight:650;letter-spacing:-.01em}
-li span{display:block;margin-top:.3em;color:var(--muted);font-size:1em;line-height:1.45}
+li b{grid-area:title;display:block;font-size:1.25em;line-height:1.2;font-weight:650;letter-spacing:-.01em}
+li span{grid-area:body;display:block;margin-top:.3em;color:var(--muted);font-size:1em;line-height:1.45}
 @media (prefers-reduced-motion: reduce){ li{transition:none} }
 ''';
 
@@ -364,7 +380,7 @@ String keyPointsAnimation(
       ? const [
           ('No files yet', 'Turn on some course files and I\'ll pull the main ideas from them.'),
         ]
-      : points.take(6).toList();
+      : points.take(5).toList();
 
   final items = list
       .map((p) => '<li><b>${htmlEscape(p.$1)}</b><span>${htmlEscape(p.$2)}</span></li>')

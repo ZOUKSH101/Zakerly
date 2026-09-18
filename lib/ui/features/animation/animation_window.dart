@@ -97,7 +97,15 @@ class _AnimationWindowState extends State<_AnimationWindow> {
   final HtmlFrameController _frame = HtmlFrameController();
   bool _playing = false;
 
+  /// The step the document last reported (null until its first report).
+  AnimationStep? _step;
+
   void _onFrameMessage(String message) {
+    if (message.startsWith(AnimationMessages.stepPrefix)) {
+      final step = AnimationStep.parse(message);
+      if (step != null) setState(() => _step = step);
+      return;
+    }
     switch (message) {
       case AnimationMessages.escape:
         Navigator.of(context).maybePop();
@@ -119,6 +127,8 @@ class _AnimationWindowState extends State<_AnimationWindow> {
     final copy = AnimationCopy.of(_language);
     final rtl = Directionality.of(context) == TextDirection.rtl;
     final ready = _loaded && !_closing;
+    final step = ready ? _step : null;
+    final z = context.z;
     // Flutter-side step controls: they drive the document by postMessage,
     // so the player works from the keyboard even while focus is out here.
     return CallbackShortcuts(
@@ -146,15 +156,43 @@ class _AnimationWindowState extends State<_AnimationWindow> {
                   ? () => setState(() {
                       _replay++;
                       _playing = false; // the fresh document starts paused
+                      _step = null; // ... and reports its step 1 on load
                     })
                   : null,
             ),
-            const Spacer(),
+            // The document hides its own caption and counter when hosted
+            // (data-hosted); they live here, next to the only controls.
+            Expanded(
+              child: Semantics(
+                liveRegion: true,
+                child: step == null
+                    ? const SizedBox.shrink()
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (step.caption.isNotEmpty)
+                            Text(
+                              step.caption,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.type.bodyMedium?.copyWith(color: z.text),
+                            ),
+                          Text(
+                            copy.stepTemplate
+                                .replaceAll('{i}', '${step.step}')
+                                .replaceAll('{n}', '${step.total}'),
+                            style: context.type.bodySmall?.copyWith(color: z.textSecondary),
+                          ),
+                        ],
+                      ),
+              ),
+            ),
             ZButton(
               label: copy.back,
               variant: ZButtonVariant.tonal,
               size: ZButtonSize.sm,
-              onPressed: ready ? _back : null,
+              onPressed: ready && (step == null || step.step > 1) ? _back : null,
             ),
             ZButton(
               label: _playing ? copy.pause : copy.play,
@@ -165,7 +203,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
               label: copy.next,
               variant: ZButtonVariant.tonal,
               size: ZButtonSize.sm,
-              onPressed: ready ? _next : null,
+              onPressed: ready && (step == null || step.step < step.total) ? _next : null,
             ),
           ],
           child: FutureBuilder<AnimationResult>(
@@ -309,6 +347,8 @@ class _Result extends StatelessWidget {
                     controller: controller,
                     onMessage: onMessage,
                     acceptedMessages: _fromFrame,
+                    acceptedPrefixes: const {AnimationMessages.stepPrefix},
+                    hostedAttribute: AnimationMessages.hostedAttribute,
                   ),
           ),
         ),

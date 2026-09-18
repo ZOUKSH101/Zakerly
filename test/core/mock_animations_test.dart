@@ -2,8 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:zakerly/core/animations.dart';
 import 'package:zakerly/core/mock/mock_animations.dart';
+import 'package:zakerly/core/mock/mock_llm.dart';
+import 'package:zakerly/core/models.dart';
 import 'package:zakerly/core/preferences.dart';
 import 'package:zakerly/core/prompts.dart';
+import 'package:zakerly/core/retrieval.dart';
+import 'package:zakerly/core/services.dart';
 
 void main() {
   group('matchAnimationTemplate', () {
@@ -98,6 +102,139 @@ void main() {
       ]);
       expect(html, isNot(contains('</script><script>alert')));
     });
+
+    test('in-document controls and caption hide when hosted, and report each step', () {
+      for (final html in [
+        bstAnimation('Binary search trees'),
+        growthAnimation('Compound interest'),
+        keyPointsAnimation('Summarize', const [('A', 'a.'), ('B', 'b.'), ('C', 'c.')]),
+      ]) {
+        // Standalone: the controls exist and work (no data-hosted on <html>).
+        expect(html, contains('class="controls"'));
+        expect(html, isNot(contains('data-hosted lang')));
+        expect(html, contains('html[data-hosted] .controls,html[data-hosted] .caption{display:none}'));
+        expect(html, contains(AnimationMessages.stepPrefix));
+        expect(html, contains('window.parent.postMessage'));
+
+        final hosted = withHostedFlag(html);
+        expect(hosted, contains('<html data-hosted lang="en" dir="ltr">'));
+        expect(withHostedFlag(hosted), hosted, reason: 'idempotent');
+      }
+    });
+
+    test('withHostedFlag handles documents without an <html> tag', () {
+      expect(
+        withHostedFlag('<!doctype html><body>x</body>'),
+        '<!doctype html><html data-hosted><body>x</body>',
+      );
+      expect(withHostedFlag('<p>x</p>'), '<html data-hosted><p>x</p>');
+      // <header> is not <html>.
+      expect(withHostedFlag('<header>x</header>'), '<html data-hosted><header>x</header>');
+    });
+
+    test('step 1 is not an empty stage', () {
+      final bst = bstAnimation('Binary search trees');
+      expect(bst, isNot(contains('empty tree')));
+      expect(bst, contains('order.slice(0, step + 1)'));
+      // Entrance transitions are off for the first paint.
+      expect(bst, contains('html.first *{transition:none!important}'));
+      expect(bst, contains("classList.add('first')"));
+    });
+
+    test('key ideas put the title next to the number badge, body below', () {
+      final html = keyPointsAnimation('Summarize', const [('A', 'a.')]);
+      expect(html, contains('grid-template-areas:"num title" ". body"'));
+      expect(html, contains('li::before{grid-area:num'));
+      expect(html, contains('li b{grid-area:title'));
+      expect(html, contains('li span{grid-area:body'));
+      expect(html, contains('width:min(100%,62em)'));
+    });
+  });
+
+  group('AnimationStep.parse', () {
+    test('accepts exactly the fixed shape', () {
+      final s = AnimationStep.parse('zakerly:step:{"step":2,"total":5,"caption":" Hi "}');
+      expect(s, isNotNull);
+      expect(s!.step, 2);
+      expect(s.total, 5);
+      expect(s.caption, 'Hi');
+    });
+
+    test('rejects anything else', () {
+      for (final m in [
+        'zakerly:next',
+        'zakerly:step:',
+        'zakerly:step:not json',
+        'zakerly:step:[1,2]',
+        'zakerly:step:{"step":0,"total":5,"caption":""}',
+        'zakerly:step:{"step":6,"total":5,"caption":""}',
+        'zakerly:step:{"step":1,"total":5}',
+        'zakerly:step:{"step":1,"total":5,"caption":"x","href":"y"}',
+        'zakerly:step:{"step":"1","total":5,"caption":"x"}',
+      ]) {
+        expect(AnimationStep.parse(m), isNull, reason: m);
+      }
+    });
+  });
+
+  group('summary requests', () {
+    CourseFile file(String id, List<(String, String)> sections) => CourseFile(
+          id: id,
+          courseId: 'c',
+          name: '$id.pdf',
+          kind: 'pdf',
+          sourceTokens: 1000,
+        )..chunks = [
+            for (final (h, t) in sections) Chunk(fileId: id, fileName: '$id.pdf', heading: h, text: t),
+          ];
+
+    final files = [
+      file('week1', [
+        ('Supply and demand', 'Prices rise when demand outruns supply. Markets then adjust.'),
+        ('Elasticity', 'Elasticity measures how much demand reacts to price.'),
+        ('Main idea of markets', 'Markets coordinate buyers and sellers.'),
+      ]),
+      file('week2', [
+        ('Opportunity cost', 'Every choice gives up the next best option.'),
+        ('Comparative advantage', 'Trade lets each side focus on what it does cheapest.'),
+      ]),
+    ];
+
+    test('a broad concept gets the course overview, not one retrieved chunk', () {
+      const concept = 'Sum up the main ideas';
+      expect(isBroadRequest(concept), isTrue);
+      final context = animationContext(concept, files);
+      expect(context.length, inInclusiveRange(3, 5));
+      expect(context.map((c) => c.heading), containsAll(['Supply and demand', 'Opportunity cost']));
+      // A specific concept still uses plain retrieval.
+      expect(animationContext('Elasticity', files).map((c) => c.heading), ['Elasticity']);
+    });
+
+    test('the mock draws at least three ideas for a summary request', () async {
+      const concept = 'Sum up the main ideas';
+      final res = await MockLlm().generate(LlmRequest(
+        purpose: LlmPurpose.animation,
+        system: Prompts.animationSystemFor(),
+        prompt: Prompts.animation(concept, animationContext(concept, files)),
+        maxOutputTokens: 6000,
+      ));
+      expect(matchAnimationTemplate(concept), AnimationTemplate.keyIdeas);
+      final ideas = RegExp('<li>').allMatches(res.text).length;
+      expect(ideas, inInclusiveRange(3, 5));
+    });
+
+    test('the mock tops up to three ideas even from a single section', () async {
+      final one = [
+        file('solo', [('Only section', 'First point here. Second point here. Third point here.')]),
+      ];
+      final res = await MockLlm().generate(LlmRequest(
+        purpose: LlmPurpose.animation,
+        system: Prompts.animationSystemFor(),
+        prompt: Prompts.animation('Sum up the main ideas', overviewChunks(one)),
+        maxOutputTokens: 6000,
+      ));
+      expect(RegExp('<li>').allMatches(res.text).length, 3);
+    });
   });
 
   group('animation prompt', () {
@@ -110,6 +247,12 @@ void main() {
       expect(system, contains(AnimationPalette.dark.bg));
       expect(system, contains('do NOT use a prefers-color-scheme'));
       expect(system, contains(AnimationMessages.toggle));
+      // Same hosted contract as the mock documents.
+      expect(system, contains('html[data-hosted] .controls'));
+      expect(system, contains('class="controls"'));
+      expect(system, contains(AnimationMessages.stepPrefix));
+      expect(system, contains('Step 1 must already show real content'));
+      expect(system, contains('3 to 5 ideas'));
       final prompt = Prompts.animation(
         'Trees',
         const [],

@@ -43,30 +43,12 @@ class TutorService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // "Sum up the main ideas", "quiz me on this week" and friends name no
-  // specific term, so keyword retrieval finds nothing. Those get an overview
-  // instead: the opening sections of each selected file.
-  static final _broad = RegExp(
-    r'summ|sum up|main idea|key idea|overview|hardest|difficult|review|recap|quiz|test me|this week|'
-    r'everything|what is this course|لخص|تلخيص|أهم|أصعب|راجع|امتحن|اختبر',
-    caseSensitive: false,
-  );
-
-  /// Arabic short vowels and shadda ("لخّصلي") would hide the stems above.
-  static final _harakat = RegExp('[ً-ْ]');
-
-  static bool _isBroadRequest(String q) => _broad.hasMatch(q.replaceAll(_harakat, ''));
-
-  static List<Chunk> _overview(List<CourseFile> files) => [
-        for (var i = 0; i < 2; i++)
-          for (final f in files)
-            if (f.chunks.length > i) f.chunks[i],
-      ].take(6).toList();
-
   ContextPlan plan(Course course, Set<String> fileIds, String question, StudyMode mode) {
     final files = course.readyFiles.where((f) => fileIds.contains(f.id)).toList();
     var chunks = retrieve(question, files.expand((f) => f.chunks));
-    if (chunks.isEmpty && _isBroadRequest(question)) chunks = _overview(files);
+    // Course-wide asks name no specific term: fall back to the overview
+    // (see isBroadRequest / overviewChunks in retrieval.dart).
+    if (chunks.isEmpty && isBroadRequest(question)) chunks = overviewChunks(files);
     final history = _historyTail(course.id);
     final prompt = Prompts.tutor(context: chunks, history: history, question: question);
     final system = Prompts.tutorSystem(course, mode, language: _language());

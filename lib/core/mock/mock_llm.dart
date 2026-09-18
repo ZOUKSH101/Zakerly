@@ -119,11 +119,29 @@ class MockLlm implements LlmProvider {
       AnimationTemplate.growth => growthAnimation(concept, language: language, theme: theme),
       AnimationTemplate.keyIdeas => keyPointsAnimation(
           concept,
-          [for (final s in sources) (s.heading, _sentences(s.text).first)],
+          _ideas(sources),
           language: language,
           theme: theme,
         ),
     };
+  }
+
+  /// Three to five ideas: one per source section, topped up with the
+  /// sections' further sentences when there are fewer than three sections.
+  List<(String, String)> _ideas(List<({String file, String heading, String text})> sources) {
+    final ideas = [for (final s in sources) (s.heading, _sentences(s.text).first)];
+    for (var depth = 1; ideas.length < 3; depth++) {
+      var added = false;
+      for (final s in sources) {
+        final sentences = _sentences(s.text);
+        if (sentences.length > depth && ideas.length < 3) {
+          ideas.add((s.heading, sentences[depth]));
+          added = true;
+        }
+      }
+      if (!added) break;
+    }
+    return ideas.take(5).toList();
   }
 
   List<({String file, String heading, String text})> _sources(String prompt) => [

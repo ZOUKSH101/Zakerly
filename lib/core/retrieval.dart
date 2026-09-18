@@ -49,3 +49,29 @@ List<Chunk> retrieve(
   }
   return picked;
 }
+
+// "Sum up the main ideas", "quiz me on this week" and friends name no
+// specific term, so keyword retrieval finds nothing (or one stray chunk that
+// happens to say "idea"). Those get an overview instead: the opening
+// sections of each file.
+final _broad = RegExp(
+  r'summ|sum up|main idea|key idea|overview|hardest|difficult|review|recap|quiz|test me|this week|'
+  r'everything|what is this course|لخص|تلخيص|أهم|أصعب|راجع|امتحن|اختبر',
+  caseSensitive: false,
+);
+
+/// Arabic short vowels and shadda ("لخّصلي") would hide the stems above.
+final _harakat = RegExp('[ً-ْ]');
+
+/// True for course-wide asks (summaries, key ideas, reviews, quizzes) that
+/// name no specific term.
+bool isBroadRequest(String q) => _broad.hasMatch(q.replaceAll(_harakat, ''));
+
+/// The opening sections of [files] (up to [depth] per file), interleaved so
+/// each file contributes its first section before any file contributes a
+/// second.
+List<Chunk> overviewChunks(List<CourseFile> files, {int max = 6, int depth = 2}) => [
+      for (var i = 0; i < depth; i++)
+        for (final f in files)
+          if (f.chunks.length > i) f.chunks[i],
+    ].take(max).toList();

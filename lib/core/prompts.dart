@@ -88,8 +88,20 @@ class Prompts {
         'forward one step, "${AnimationMessages.toggle}" toggles Play/Pause. When playback '
         'starts or stops, call parent.postMessage("${AnimationMessages.playing}", "*") or '
         'parent.postMessage("${AnimationMessages.paused}", "*"). When Escape is pressed, call '
-        'parent.postMessage("${AnimationMessages.escape}", "*"). ';
-    return '$_animationBase$lang$controls$colors$protocol$_animationTail';
+        'parent.postMessage("${AnimationMessages.escape}", "*"). '
+        'Every time a step is shown (including step 1 on load), call '
+        'window.parent.postMessage("${AnimationMessages.stepPrefix}" + JSON.stringify({step: N, '
+        'total: T, caption: C}), "*") where N is the 1-based step number, T the number of steps '
+        'and C that step\'s caption, with exactly those three keys. Always write window.parent, '
+        'never a bare parent, and never declare a variable named parent. ';
+    const hosted = 'Put the Back, Play/Pause and Next buttons and the step counter inside one '
+        'element with class="controls", and the caption in an element with class="caption". '
+        'The app may host the document and show its own controls and caption; it then sets a '
+        '${AnimationMessages.hostedAttribute} attribute on the <html> element, so include this CSS rule: '
+        'html[${AnimationMessages.hostedAttribute}] .controls, html[${AnimationMessages.hostedAttribute}] '
+        '.caption { display: none; } and let the visual take the freed space. Opened on its own, '
+        'the controls must still work. ';
+    return '$_animationBase$lang$controls$colors$protocol$hosted$_animationTail';
   }
 
   static const _animationBase =
@@ -103,8 +115,12 @@ class Prompts {
       'Break the explanation into a sequence of steps. Provide visible controls: a Back button, '
       'a Play/Pause button, a Next button, and a step counter. Show one '
       'short caption per step describing what just happened. Wire the left and right arrow keys '
-      'to Back and Next, and Space to Play/Pause. Wait for the student to press Next by default; '
-      'only advance automatically while Play is active. '
+      'to Back and Next, and Space to Play/Pause. Step 1 must already show real content (never an '
+      'empty stage) the moment the document loads, with no entrance animation on it. Wait for the '
+      'student to press Next by default; only advance automatically while Play is active. '
+      'For a summary or key ideas request, show 3 to 5 ideas, one per step, each with its title '
+      'next to its number on one row and a short body below, in a centred column at most 62em '
+      'wide with large, readable type. '
       'Respect prefers-reduced-motion by removing transitions and jumping straight to each step, '
       'still under the student\'s step control. Use a plain system font stack. ';
 
