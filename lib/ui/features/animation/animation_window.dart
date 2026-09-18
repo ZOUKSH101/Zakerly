@@ -6,6 +6,7 @@ import 'package:zakerly/core/animations.dart';
 import 'package:zakerly/core/app_services.dart';
 import 'package:zakerly/core/models.dart';
 import 'package:zakerly/core/util.dart';
+import 'package:zakerly/l10n/strings.dart';
 
 import '../../primitives/primitives.dart';
 import 'html_frame.dart';
@@ -82,11 +83,12 @@ class _AnimationWindowState extends State<_AnimationWindow> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
+    final t = S.of(context);
     return Semantics(
       scopesRoute: true,
       namesRoute: true,
       explicitChildNodes: true,
-      label: 'Animation: ${widget.concept}',
+      label: t.animationSemantics(widget.concept),
       child: ZDialogFrame(
         title: widget.concept,
         subtitle: '${widget.course.code} · ${widget.course.name}',
@@ -95,7 +97,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
         actions: [
           ZIconButton(
             icon: Icons.replay,
-            tooltip: 'Replay',
+            tooltip: t.replay,
             onPressed: _loaded ? () => setState(() => _replay++) : null,
           ),
         ],
@@ -107,7 +109,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
               return Semantics(
                 liveRegion: true,
                 excludeSemantics: true,
-                label: 'Drawing your animation. Checking if your class already has one',
+                label: t.drawingSemantics,
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -115,12 +117,12 @@ class _AnimationWindowState extends State<_AnimationWindow> {
                       const ZSpinner(size: 24),
                       const SizedBox(height: ZSpace.s16),
                       Text(
-                        'Drawing your animation…',
+                        t.drawing,
                         style: context.type.bodyLarge?.copyWith(color: z.text),
                       ),
                       const SizedBox(height: ZSpace.s4),
                       Text(
-                        'Checking if your class already has one',
+                        t.checkingClass,
                         style: context.type.bodySmall?.copyWith(color: z.textTertiary),
                       ),
                     ],
@@ -135,18 +137,18 @@ class _AnimationWindowState extends State<_AnimationWindow> {
                   liveRegion: true,
                   child: ZEmpty(
                     icon: Icons.hourglass_empty,
-                    title: 'That\'s all for today',
-                    message: error.message,
-                    action: const ZBadge(label: 'Pro: 100 a day', tone: ZBadgeTone.accent),
+                    title: t.limitTitle,
+                    message: t.limitBody(error.perDay),
+                    action: ZBadge(label: t.proPerDay, tone: ZBadgeTone.accent),
                   ),
                 );
               }
               return Semantics(
                 liveRegion: true,
-                child: const ZEmpty(
+                child: ZEmpty(
                   icon: Icons.error_outline,
-                  title: "Couldn't draw that",
-                  message: 'Try again, or ask the question a different way.',
+                  title: t.couldntDraw,
+                  message: t.couldntDrawBody,
                 ),
               );
             }
@@ -180,6 +182,7 @@ class _Result extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final z = context.z;
+    final t = S.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -193,20 +196,18 @@ class _Result extends StatelessWidget {
                   ZBadge(
                     tone: ZBadgeTone.success,
                     icon: Icons.bolt,
-                    label: 'Saved ${formatTokens(result.tokens)} tokens',
+                    label: t.savedTokens(formatTokens(result.tokens)),
                   )
                 else
                   ZBadge(
                     tone: ZBadgeTone.accent,
                     icon: Icons.auto_awesome,
-                    label: 'Used ${formatTokens(result.tokens)} tokens',
+                    label: t.usedTokens(formatTokens(result.tokens)),
                   ),
                 const SizedBox(width: ZSpace.s8),
                 Flexible(
                   child: Text(
-                    result.fromCache
-                        ? 'Already drawn for your class'
-                        : 'Now free for everyone in ${course.code}',
+                    result.fromCache ? t.alreadyDrawn : t.nowFreeFor(course.code),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: context.type.bodySmall?.copyWith(color: z.textTertiary),
@@ -224,7 +225,7 @@ class _Result extends StatelessWidget {
                 ? ColoredBox(color: z.raised)
                 : HtmlFrame(
                     key: ValueKey(Object.hash(replayKey, result.html)),
-                    title: 'Animation: ${result.concept}',
+                    title: t.animationSemantics(result.concept),
                     html: result.html,
                   ),
           ),

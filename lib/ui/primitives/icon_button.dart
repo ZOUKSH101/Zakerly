@@ -11,6 +11,7 @@ class ZIconButton extends StatelessWidget {
     required this.tooltip,
     required this.onPressed,
     this.selected = false,
+    this.mirrorInRtl = false,
   });
 
   final IconData icon;
@@ -18,12 +19,20 @@ class ZIconButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool selected;
 
+  /// Flip the glyph horizontally in right-to-left layouts, for icons that
+  /// point "forward" (the reading direction) rather than at a fixed side.
+  final bool mirrorInRtl;
+
   @override
   Widget build(BuildContext context) {
     final z = context.z;
     final disabled = onPressed == null;
     final bg = selected ? z.accentSoft : Colors.transparent;
     final fg = selected ? z.accentText : z.textSecondary;
+    Widget glyph = Icon(icon, size: 18, color: disabled ? fg.withValues(alpha: 0.4) : fg);
+    if (mirrorInRtl && Directionality.of(context) == TextDirection.rtl) {
+      glyph = Transform.flip(flipX: true, child: glyph);
+    }
 
     return Tooltip(
       message: tooltip,
@@ -36,7 +45,7 @@ class ZIconButton extends StatelessWidget {
           height: 32,
           alignment: Alignment.center,
           decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZRadius.sm)),
-          child: Icon(icon, size: 18, color: disabled ? fg.withValues(alpha: 0.4) : fg),
+          child: glyph,
         ),
       ),
     );

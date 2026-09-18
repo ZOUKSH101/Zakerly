@@ -15,6 +15,7 @@ import '../../../core/app_services.dart';
 import '../../../core/models.dart';
 import '../../../core/scheduler.dart';
 import '../../../core/util.dart';
+import '../../../l10n/strings.dart';
 import '../../primitives/primitives.dart';
 import '../tutorial/tutorial_targets.dart';
 
@@ -110,6 +111,7 @@ class _BudgetCard extends StatelessWidget {
       listenable: s.budget,
       builder: (context, _) {
         final budget = s.budget;
+        final t = S.of(context);
         final pct = (budget.fraction * 100).round();
         return ZCard(
           key: TutorialTargets.budget,
@@ -120,8 +122,8 @@ class _BudgetCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Budget', style: context.type.titleMedium),
-                  ZBadge(label: budget.useOwnKey ? 'Your key' : budget.plan.name),
+                  Text(t.budget, style: context.type.titleMedium),
+                  ZBadge(label: budget.useOwnKey ? t.yourKey : t.planName(budget.tier)),
                 ],
               ),
               const SizedBox(height: ZSpace.s16),
@@ -129,7 +131,7 @@ class _BudgetCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Semantics(
-                    label: '$pct percent of monthly budget used',
+                    label: t.budgetUsedSemantics(pct),
                     excludeSemantics: true,
                     child: ZRing(fraction: budget.fraction, size: _ringSize),
                   ),
@@ -140,12 +142,12 @@ class _BudgetCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '${formatTokens(budget.remaining)} left',
+                          t.tokensLeft(formatTokens(budget.remaining)),
                           style: context.type.displaySmall,
                         ),
                         const SizedBox(height: ZSpace.s4),
                         Text(
-                          'of ${formatTokens(budget.limit)} this month',
+                          t.ofThisMonth(formatTokens(budget.limit)),
                           style: context.type.bodySmall,
                         ),
                       ],
@@ -155,7 +157,7 @@ class _BudgetCard extends StatelessWidget {
               ),
               const SizedBox(height: ZSpace.s12),
               Text(
-                '${formatTokens(budget.sessionUsed)} used this session',
+                t.usedThisSession(formatTokens(budget.sessionUsed)),
                 style: context.type.labelSmall,
               ),
             ],
@@ -177,6 +179,7 @@ class _FilesCard extends StatelessWidget {
       listenable: Listenable.merge([s.courses, s.session, s.cache]),
       builder: (context, _) {
         final z = context.z;
+        final t = S.of(context);
         final course = s.courses.byId(s.session.courseId) ??
             (s.courses.courses.isNotEmpty ? s.courses.courses.first : null);
         final saved = s.cache.tokensSaved;
@@ -187,11 +190,11 @@ class _FilesCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Files', style: context.type.titleMedium),
+              Text(t.files, style: context.type.titleMedium),
               const SizedBox(height: ZSpace.s12),
               Expanded(
                 child: course == null
-                    ? Center(child: Text('Pick a course to see its files', style: context.type.bodySmall))
+                    ? Center(child: Text(t.pickCourseForFiles, style: context.type.bodySmall))
                     : LayoutBuilder(
                         builder: (context, constraints) {
                           final fit = _fitRows(
@@ -205,7 +208,7 @@ class _FilesCard extends StatelessWidget {
                             children: [
                               for (final f in fit.visible) _FileRow(s: s, file: f),
                               if (fit.overflow > 0)
-                                Text('+${fit.overflow} more', style: context.type.bodySmall),
+                                Text(t.more(fit.overflow), style: context.type.bodySmall),
                             ],
                           );
                         },
@@ -214,7 +217,7 @@ class _FilesCard extends StatelessWidget {
               if (saved > 0) ...[
                 const SizedBox(height: ZSpace.s12),
                 Text(
-                  'Saved ${formatTokens(saved)} this session',
+                  t.savedThisSession(formatTokens(saved)),
                   style: context.type.bodySmall?.copyWith(color: z.successText),
                 ),
               ],
@@ -247,8 +250,8 @@ class _FileRow extends StatelessWidget {
           child: ZIconButton(
             icon: included ? Icons.check_circle : Icons.radio_button_unchecked,
             tooltip: included
-                ? 'Stop using ${file.name} in answers'
-                : 'Use ${file.name} in answers',
+                ? S.of(context).stopUsingFile(file.name)
+                : S.of(context).useFile(file.name),
             selected: included,
             onPressed: ready ? () => s.session.toggleFile(file.id) : null,
           ),
@@ -268,18 +271,11 @@ class _StatusDot extends StatelessWidget {
 
   static const double size = 10;
 
-  String get _label => switch (status) {
-        FileStatus.ready => 'Ready',
-        FileStatus.queued => 'Waiting',
-        FileStatus.processing => 'Getting ready',
-        FileStatus.unprocessed => 'Not started',
-        FileStatus.failed => 'Couldn\'t read this file',
-      };
-
   @override
   Widget build(BuildContext context) {
+    final label = S.of(context).fileStatus(status);
     if (status == FileStatus.processing) {
-      return Semantics(label: _label, child: const ZSpinner(size: size));
+      return Semantics(label: label, child: const ZSpinner(size: size));
     }
     final z = context.z;
     final color = switch (status) {
@@ -290,9 +286,9 @@ class _StatusDot extends StatelessWidget {
       FileStatus.processing => z.accent,
     };
     return Tooltip(
-      message: _label,
+      message: label,
       child: Semantics(
-        label: _label,
+        label: label,
         child: SizedBox.square(
           dimension: size,
           child: Center(
@@ -322,6 +318,7 @@ class _ProcessingCard extends StatelessWidget {
       builder: (context, _) {
         final scheduler = s.scheduler;
         final policy = scheduler.policy;
+        final t = S.of(context);
         final open = scheduler.open.toList();
         final visible = open.take(_maxVisible).toList();
         final overflow = open.length - visible.length;
@@ -334,10 +331,10 @@ class _ProcessingCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('In progress', style: context.type.titleMedium),
+                  Text(t.inProgress, style: context.type.titleMedium),
                   ZIconButton(
                     icon: policy.simulateOffPeak ? Icons.bedtime : Icons.bedtime_outlined,
-                    tooltip: 'Demo: pretend it\'s night (1 to 7 am)',
+                    tooltip: t.demoNight(policy),
                     selected: policy.simulateOffPeak,
                     onPressed: () => scheduler.setSimulateOffPeak(!policy.simulateOffPeak),
                   ),
@@ -348,7 +345,7 @@ class _ProcessingCard extends StatelessWidget {
               if (overflow > 0)
                 Padding(
                   padding: const EdgeInsets.only(top: ZSpace.s4),
-                  child: Text('+$overflow more', style: context.type.bodySmall),
+                  child: Text(t.more(overflow), style: context.type.bodySmall),
                 ),
             ],
           ),
@@ -369,14 +366,20 @@ class _JobRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final z = context.z;
+    final t = S.of(context);
     final running = job.state == JobState.running;
     final canPrioritize = !running && job.lane == JobLane.background;
     // "Process Week 3 - Trees.pdf" reads as just the file here: the card
     // title already says what's happening.
-    final title = job.label.startsWith(_processPrefix)
+    final title = job.kind == JobKind.other && job.label.startsWith(_processPrefix)
         ? job.label.substring(_processPrefix.length)
-        : job.label;
-    final reason = running ? 'Working on it now' : (job.waitReason ?? 'Waiting');
+        : t.jobTitle(job);
+    final wait = job.waitReason;
+    final reason = running
+        ? t.workingOnIt
+        : (wait == null
+            ? t.waiting
+            : t.waitReason(wait, requestsPerMinute: s.scheduler.policy.requestsPerMinute));
 
     return ZRow(
       leading: running
@@ -399,7 +402,8 @@ class _JobRow extends StatelessWidget {
       trailing: canPrioritize
           ? ZIconButton(
               icon: Icons.fast_forward_rounded,
-              tooltip: 'Process now',
+              mirrorInRtl: true,
+              tooltip: t.processNow,
               onPressed: () => s.scheduler.prioritize(job),
             )
           : null,

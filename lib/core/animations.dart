@@ -21,8 +21,11 @@ class AnimationResult {
 }
 
 class AnimationLimitReached implements Exception {
-  const AnimationLimitReached(this.message);
+  const AnimationLimitReached(this.message, {required this.perDay});
+
+  /// English copy for logs. The UI words it from [perDay] (`S.limitBody`).
   final String message;
+  final int perDay;
   @override
   String toString() => message;
 }
@@ -74,13 +77,17 @@ class AnimationService {
     if (!budget.canGenerateAnimation) {
       throw AnimationLimitReached(
           'You\'ve used all ${budget.plan.animationsPerDay} new animations for today. '
-          'Come back tomorrow. Ones your class already drew still open for free.');
+          'Come back tomorrow. Ones your class already drew still open for free.',
+          perDay: budget.plan.animationsPerDay);
     }
 
     final context = retrieve(concept, course.readyFiles.expand((f) => f.chunks), budgetTokens: 1200);
     late LlmResponse res;
+    final short = concept.length > 28 ? '${concept.substring(0, 28)}…' : concept;
     final job = scheduler.submit(
-      label: 'Animation · ${concept.length > 28 ? '${concept.substring(0, 28)}…' : concept}',
+      label: 'Animation · $short',
+      kind: JobKind.animation,
+      subject: short,
       lane: JobLane.interactive,
       estimatedTokens: 4000,
       run: () async {

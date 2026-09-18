@@ -52,6 +52,8 @@ class IngestionService {
 
     final job = scheduler.submit(
       label: 'Process ${file.name}',
+      kind: JobKind.process,
+      subject: file.name,
       lane: JobLane.background,
       estimatedTokens: 1500,
       run: () async {

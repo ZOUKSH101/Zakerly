@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:zakerly/core/app_services.dart';
+import 'package:zakerly/l10n/strings.dart';
 
 import '../../primitives/primitives.dart';
 
@@ -23,7 +24,10 @@ class _SignInScreenState extends State<SignInScreen> {
   final _passwordFocus = FocusNode();
 
   _Pending _pending = _Pending.none;
-  String? _error;
+
+  /// Whether the last attempt failed. The sentence is built at render time
+  /// so it follows the app language.
+  bool _error = false;
 
   @override
   void dispose() {
@@ -33,16 +37,16 @@ class _SignInScreenState extends State<SignInScreen> {
     super.dispose();
   }
 
-  String _messageFor(Object e) {
+  bool _failed(Object e) {
     debugPrint('sign-in failed: $e');
-    return 'That didn\'t work. Check your email and password and try again.';
+    return true;
   }
 
   Future<void> _submitEmail() async {
     if (_pending != _Pending.none) return;
     setState(() {
       _pending = _Pending.email;
-      _error = null;
+      _error = false;
     });
     try {
       await Services.of(context).auth.signInWithEmail(
@@ -51,7 +55,7 @@ class _SignInScreenState extends State<SignInScreen> {
           );
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = _messageFor(e));
+      setState(() => _error = _failed(e));
     } finally {
       if (mounted) setState(() => _pending = _Pending.none);
     }
@@ -61,13 +65,13 @@ class _SignInScreenState extends State<SignInScreen> {
     if (_pending != _Pending.none) return;
     setState(() {
       _pending = _Pending.google;
-      _error = null;
+      _error = false;
     });
     try {
       await Services.of(context).auth.signInWithGoogle();
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = _messageFor(e));
+      setState(() => _error = _failed(e));
     } finally {
       if (mounted) setState(() => _pending = _Pending.none);
     }
@@ -77,6 +81,7 @@ class _SignInScreenState extends State<SignInScreen> {
   Widget build(BuildContext context) {
     final z = context.z;
     final type = context.type;
+    final t = S.of(context);
     final emailLoading = _pending == _Pending.email;
     final googleLoading = _pending == _Pending.google;
     final busy = _pending != _Pending.none;
@@ -111,10 +116,10 @@ class _SignInScreenState extends State<SignInScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.baseline,
                                 textBaseline: TextBaseline.alphabetic,
                                 children: [
-                                  Text('Zakerly', style: type.displayLarge),
+                                  Text(t.appName, style: type.displayLarge),
                                   const SizedBox(width: ZSpace.s12),
                                   Text(
-                                    'ذاكرلي',
+                                    t.appNameArabic,
                                     locale: const Locale('ar'),
                                     style: type.titleLarge == null
                                         ? null
@@ -126,7 +131,7 @@ class _SignInScreenState extends State<SignInScreen> {
                               ),
                               const SizedBox(height: ZSpace.s12),
                               Text(
-                                'I already read your slides. Sign in and let\'s study.',
+                                t.signInTagline,
                                 textAlign: TextAlign.center,
                                 style: type.bodyLarge?.copyWith(color: z.textSecondary),
                               ),
@@ -142,8 +147,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                 index: 1,
                                 child: ZTextField(
                                   controller: _emailController,
-                                  label: 'Email',
-                                  hint: 'Email',
+                                  label: t.email,
+                                  hint: t.email,
                                   enabled: !busy,
                                   autofillHints: const [AutofillHints.email],
                                   keyboardType: TextInputType.emailAddress,
@@ -157,8 +162,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                 child: ZTextField(
                                   controller: _passwordController,
                                   focusNode: _passwordFocus,
-                                  label: 'Password',
-                                  hint: 'Password',
+                                  label: t.password,
+                                  hint: t.password,
                                   obscure: true,
                                   enabled: !busy,
                                   autofillHints: const [AutofillHints.password],
@@ -169,12 +174,12 @@ class _SignInScreenState extends State<SignInScreen> {
                             ],
                           ),
                         ),
-                        if (_error != null) ...[
+                        if (_error) ...[
                           const SizedBox(height: ZSpace.s12),
                           Semantics(
                             liveRegion: true,
                             child: Text(
-                              _error!,
+                              t.signInError,
                               textAlign: TextAlign.center,
                               style: type.bodySmall?.copyWith(color: z.danger),
                             ),
@@ -184,7 +189,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         FadeSlideIn(
                           index: 3,
                           child: ZButton(
-                            label: 'Continue',
+                            label: t.continueLabel,
                             size: ZButtonSize.lg,
                             expand: true,
                             loading: emailLoading,
@@ -195,7 +200,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         FadeSlideIn(
                           index: 4,
                           child: ZButton(
-                            label: 'Continue with Google',
+                            label: t.continueWithGoogle,
                             variant: ZButtonVariant.tonal,
                             size: ZButtonSize.lg,
                             expand: true,
@@ -237,10 +242,10 @@ class _GlowingMark extends StatelessWidget {
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          Positioned(
-            left: -_glowReach,
+          PositionedDirectional(
+            start: -_glowReach,
             top: -_glowReach,
-            right: -_glowReach,
+            end: -_glowReach,
             bottom: -_glowReach,
             child: IgnorePointer(
               child: TweenAnimationBuilder<double>(

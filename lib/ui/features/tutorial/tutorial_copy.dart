@@ -1,7 +1,8 @@
-// Copy + anchor data for the spotlight tutorial. Kept separate from the
-// overlay widget so the words are easy to review/tweak on their own.
+// Copy + anchor data for the spotlight tutorial. The words live in
+// lib/l10n/strings.dart; this file only pairs them with their targets.
 import 'package:flutter/widgets.dart';
 
+import '../../../l10n/strings.dart';
 import 'tutorial_targets.dart';
 
 /// One stop of the spotlight tour: the real widget to light up, a one-line
@@ -17,46 +18,32 @@ class TutorialStep {
 /// The real flow, in order: sync Canvas, pick a course, choose the files,
 /// pick a study mode, ask a question, visualize an answer, watch the
 /// budget, then bring your own key if you need more room.
-final List<TutorialStep> tutorialSteps = [
-  TutorialStep(
-    target: TutorialTargets.sync,
-    title: 'Your courses, synced',
-    body: 'I brought in your courses and files from Canvas. Tap Sync any time to get new ones.',
-  ),
-  TutorialStep(
-    target: TutorialTargets.courses,
-    title: 'Pick a course',
-    body: 'Tap one to open it. The ring fills as I read its files.',
-  ),
-  TutorialStep(
-    target: TutorialTargets.files,
-    title: 'Choose what I read',
-    body: 'I only use the files you tick here.',
-  ),
-  TutorialStep(
-    target: TutorialTargets.modes,
-    title: 'Pick how I help',
-    body: 'Explain gives you a clear answer. Guide me gives you hints so you '
-        'work it out. Quiz me tests you.',
-  ),
-  TutorialStep(
-    target: TutorialTargets.composer,
-    title: 'Ask your question',
-    body: "Ask anything from your slides. I'll show which file each answer came from.",
-  ),
-  TutorialStep(
-    target: TutorialTargets.visualize,
-    title: 'Watch it move',
-    body: 'Turn my last answer into a short animation.',
-  ),
-  TutorialStep(
-    target: TutorialTargets.budget,
-    title: 'Your budget',
-    body: 'This is how much you have left this month.',
-  ),
-  TutorialStep(
-    target: TutorialTargets.settings,
-    title: 'Plans and keys',
-    body: 'Need more? Switch plans or add your own API key here.',
-  ),
-];
+List<TutorialStep> tutorialStepsFor(S t) => [
+      TutorialStep(target: TutorialTargets.sync, title: t.tutorialSyncTitle, body: t.tutorialSyncBody),
+      TutorialStep(
+        target: TutorialTargets.courses,
+        title: t.tutorialCoursesTitle,
+        body: t.tutorialCoursesBody,
+      ),
+      TutorialStep(target: TutorialTargets.files, title: t.tutorialFilesTitle, body: t.tutorialFilesBody),
+      TutorialStep(target: TutorialTargets.modes, title: t.tutorialModesTitle, body: t.tutorialModesBody),
+      TutorialStep(
+        target: TutorialTargets.composer,
+        title: t.tutorialComposerTitle,
+        body: t.tutorialComposerBody,
+      ),
+      TutorialStep(
+        target: TutorialTargets.visualize,
+        title: t.tutorialVisualizeTitle,
+        body: t.tutorialVisualizeBody,
+      ),
+      TutorialStep(target: TutorialTargets.budget, title: t.tutorialBudgetTitle, body: t.tutorialBudgetBody),
+      TutorialStep(
+        target: TutorialTargets.settings,
+        title: t.tutorialSettingsTitle,
+        body: t.tutorialSettingsBody,
+      ),
+    ];
+
+/// The English tour, for code and tests that don't have a BuildContext.
+List<TutorialStep> get tutorialSteps => tutorialStepsFor(S.en);

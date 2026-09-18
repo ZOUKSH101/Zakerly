@@ -13,6 +13,7 @@ import '../../../core/budget.dart';
 import '../../../core/preferences.dart';
 import '../../../core/providers.dart';
 import '../../../core/util.dart';
+import '../../../l10n/strings.dart';
 import '../../primitives/primitives.dart';
 import '../tutorial/tutorial.dart';
 
@@ -26,13 +27,14 @@ Future<void> showSettingsDialog(BuildContext context) {
       final vp = MediaQuery.sizeOf(context);
       final width = math.min(900.0, vp.width - 2 * ZSpace.s16).clamp(0.0, double.infinity);
       final height = math.min(600.0, vp.height - 2 * ZSpace.s16).clamp(0.0, double.infinity);
+      final t = S.of(context);
       return Semantics(
         scopesRoute: true,
         namesRoute: true,
         explicitChildNodes: true,
-        label: 'Settings',
+        label: t.settings,
         child: ZDialogFrame(
-          title: 'Settings',
+          title: t.settings,
           width: width,
           height: height,
           child: _SettingsBody(host: host),
@@ -43,14 +45,20 @@ Future<void> showSettingsDialog(BuildContext context) {
 }
 
 enum _Section {
-  general('General', Icons.tune_rounded),
-  plan('Plan', Icons.workspace_premium_outlined),
-  keys('Model keys', Icons.key_outlined),
-  account('Account', Icons.person_outline_rounded);
+  general(Icons.tune_rounded),
+  plan(Icons.workspace_premium_outlined),
+  keys(Icons.key_outlined),
+  account(Icons.person_outline_rounded);
 
-  const _Section(this.label, this.icon);
-  final String label;
+  const _Section(this.icon);
   final IconData icon;
+
+  String label(S t) => switch (this) {
+        _Section.general => t.sectionGeneral,
+        _Section.plan => t.sectionPlan,
+        _Section.keys => t.sectionKeys,
+        _Section.account => t.sectionAccount,
+      };
 }
 
 class _SettingsBody extends StatefulWidget {
@@ -190,7 +198,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_section.label, style: context.type.titleLarge),
+              Text(_section.label(S.of(context)), style: context.type.titleLarge),
               const SizedBox(height: ZSpace.s20),
               pane,
             ],
@@ -201,7 +209,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
   }
 
   Widget _label(BuildContext context, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: ZSpace.s8),
+        padding: const EdgeInsetsDirectional.only(bottom: ZSpace.s8),
         child: Text(text, style: context.type.labelLarge),
       );
 
@@ -211,30 +219,31 @@ class _SettingsBodyState extends State<_SettingsBody> {
   // ---- General ---------------------------------------------------------
 
   Widget _generalPane(BuildContext context, AppServices s) {
+    final t = S.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label(context, 'Appearance'),
+        _label(context, t.appearance),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
           child: ZSegmented<ThemeMode>(
-            segments: const [
-              (ThemeMode.system, 'System'),
-              (ThemeMode.light, 'Light'),
-              (ThemeMode.dark, 'Dark'),
+            segments: [
+              (ThemeMode.system, t.themeSystem),
+              (ThemeMode.light, t.themeLight),
+              (ThemeMode.dark, t.themeDark),
             ],
             selected: s.preferences.themeMode,
             onChanged: s.preferences.setThemeMode,
           ),
         ),
         const SizedBox(height: ZSpace.s24),
-        _label(context, 'Language'),
+        _label(context, t.language),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
           child: ZSegmented<AppLanguage>(
-            segments: const [
-              (AppLanguage.english, 'English'),
-              (AppLanguage.arabic, 'العربية'),
+            // Each language is always named in its own script.
+            segments: [
+              for (final l in AppLanguage.values) (l, l.nativeName),
             ],
             selected: s.preferences.language,
             onChanged: s.preferences.setLanguage,
@@ -250,9 +259,9 @@ class _SettingsBodyState extends State<_SettingsBody> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Tutorial', style: context.type.bodyLarge),
+                  Text(t.tutorial, style: context.type.bodyLarge),
                   Text(
-                    'A 30 second tour of the workspace.',
+                    t.tutorialBlurb,
                     style: context.type.bodySmall,
                   ),
                 ],
@@ -260,7 +269,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
             ),
             const SizedBox(width: ZSpace.s12),
             ZButton(
-              label: 'Show tutorial again',
+              label: t.showTutorialAgain,
               variant: ZButtonVariant.tonal,
               size: ZButtonSize.sm,
               onPressed: _replayTutorial,
@@ -299,7 +308,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
           children: [
             cards,
             const SizedBox(height: ZSpace.s16),
-            Text('This is a demo, so switching plans is free.', style: context.type.bodySmall),
+            Text(S.of(context).demoPlansFree, style: context.type.bodySmall),
           ],
         );
       },
@@ -310,7 +319,8 @@ class _SettingsBodyState extends State<_SettingsBody> {
   /// sits at the bottom edge and both cards line up.
   Widget _planCard(BuildContext context, AppServices s, PlanTier tier, {required bool fill}) {
     final z = context.z;
-    final plan = plans[tier]!;
+    final t = S.of(context);
+    final name = t.planName(tier);
     final isCurrent = s.budget.tier == tier;
 
     return ZCard(
@@ -322,14 +332,14 @@ class _SettingsBodyState extends State<_SettingsBody> {
         children: [
           Row(
             children: [
-              Expanded(child: Text(plan.name, style: context.type.titleMedium)),
-              if (isCurrent) const ZBadge(label: 'Current', tone: ZBadgeTone.accent),
+              Expanded(child: Text(name, style: context.type.titleMedium)),
+              if (isCurrent) ZBadge(label: t.current, tone: ZBadgeTone.accent),
             ],
           ),
           const SizedBox(height: 2),
-          Text(plan.price, style: context.type.bodySmall),
+          Text(t.planPrice(tier), style: context.type.bodySmall),
           const SizedBox(height: ZSpace.s12),
-          for (final perk in plan.perks)
+          for (final perk in t.planPerks(tier))
             Padding(
               padding: const EdgeInsets.only(bottom: ZSpace.s8),
               child: Row(
@@ -350,7 +360,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
           if (!isCurrent) ...[
             const SizedBox(height: ZSpace.s4),
             ZButton(
-              label: 'Switch to ${plan.name}',
+              label: t.switchTo(name),
               variant: tier == PlanTier.pro ? ZButtonVariant.filled : ZButtonVariant.tonal,
               size: ZButtonSize.sm,
               expand: true,
@@ -365,11 +375,12 @@ class _SettingsBodyState extends State<_SettingsBody> {
   // ---- Model keys (BYOK) -------------------------------------------------
 
   Widget _keysPane(BuildContext context, AppServices s) {
+    final t = S.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Have your own API key? It stays on this device and only goes to that provider.',
+          t.keysIntro,
           style: context.type.bodyMedium,
         ),
         const SizedBox(height: ZSpace.s12),
@@ -378,15 +389,15 @@ class _SettingsBodyState extends State<_SettingsBody> {
         _hairline(context),
         const SizedBox(height: ZSpace.s16),
         ZSwitchRow(
-          title: 'Use my own key',
-          subtitle: 'Pay with your key instead of your plan\'s budget',
+          title: t.useOwnKey,
+          subtitle: t.useOwnKeySubtitle,
           value: s.budget.useOwnKey,
           onChanged: s.providers.hasKey(s.providers.activeId) ? s.budget.setUseOwnKey : null,
         ),
         if (s.budget.useOwnKey) ...[
           const SizedBox(height: ZSpace.s16),
           Text(
-            'Monthly cap: ${formatTokens(s.budget.ownKeyCap)}',
+            t.monthlyCapValue(formatTokens(s.budget.ownKeyCap)),
             style: context.type.bodyLarge,
           ),
           _capSlider(context, s),
@@ -396,6 +407,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
   }
 
   Widget _providerRow(BuildContext context, AppServices s, ProviderInfo p) {
+    final t = S.of(context);
     final adding = _addingId == p.id;
     final hasKey = s.providers.hasKey(p.id);
 
@@ -406,25 +418,25 @@ class _SettingsBodyState extends State<_SettingsBody> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Semantics(
-            label: '${p.name} key ending ${masked.replaceAll('•', '')}',
+            label: t.keyEnding(p.name, masked.replaceAll('•', '')),
             excludeSemantics: true,
             child: Text(masked, style: context.type.bodySmall),
           ),
           const SizedBox(width: ZSpace.s4),
           ZIconButton(
             icon: Icons.delete_outline,
-            tooltip: 'Remove ${p.name} key',
+            tooltip: t.removeKey(p.name),
             onPressed: () => s.providers.removeKey(p.id),
           ),
         ],
       );
     } else if (!p.available) {
-      trailing = const ZBadge(label: 'Soon');
+      trailing = ZBadge(label: t.soon);
     } else if (adding) {
       trailing = const SizedBox.shrink();
     } else {
       trailing = ZButton(
-        label: 'Add key',
+        label: t.addKey,
         variant: ZButtonVariant.tonal,
         size: ZButtonSize.sm,
         onPressed: () => setState(() {
@@ -447,7 +459,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(p.name, style: context.type.bodyLarge),
-                    Text(p.model, style: context.type.bodySmall),
+                    Text(t.providerModel(p.id, p.model), style: context.type.bodySmall),
                   ],
                 ),
               ),
@@ -461,8 +473,8 @@ class _SettingsBodyState extends State<_SettingsBody> {
                 Expanded(
                   child: ZTextField(
                     controller: _keyController,
-                    hint: 'Paste API key',
-                    label: '${p.name} API key',
+                    hint: t.pasteApiKey,
+                    label: t.providerKeyLabel(p.name),
                     obscure: true,
                     autofocus: true,
                     autofillHints: const <String>[],
@@ -473,14 +485,14 @@ class _SettingsBodyState extends State<_SettingsBody> {
                 ),
                 const SizedBox(width: ZSpace.s8),
                 ZButton(
-                  label: 'Cancel',
+                  label: t.cancel,
                   variant: ZButtonVariant.plain,
                   size: ZButtonSize.sm,
                   onPressed: _cancelAddKey,
                 ),
                 const SizedBox(width: ZSpace.s4),
                 ZButton(
-                  label: 'Save',
+                  label: t.save,
                   size: ZButtonSize.sm,
                   onPressed: () => _saveKey(s, p.id),
                 ),
@@ -507,16 +519,16 @@ class _SettingsBodyState extends State<_SettingsBody> {
 
   Widget _capSlider(BuildContext context, AppServices s) {
     final index = _nearestCapIndex(s.budget.ownKeyCap);
+    final t = S.of(context);
     return Semantics(
-      label: 'Monthly cap',
+      label: t.monthlyCap,
       child: Slider(
         value: index.toDouble(),
         min: 0,
         max: (_capSteps.length - 1).toDouble(),
         divisions: _capSteps.length - 1,
         label: formatTokens(_capSteps[index]),
-        semanticFormatterCallback: (v) =>
-            '${formatTokens(_capSteps[v.round()])} tokens per month',
+        semanticFormatterCallback: (v) => t.tokensPerMonth(formatTokens(_capSteps[v.round()])),
         onChanged: (v) => s.budget.setOwnKeyCap(_capSteps[v.round()]),
       ),
     );
@@ -526,9 +538,10 @@ class _SettingsBodyState extends State<_SettingsBody> {
 
   Widget _accountPane(BuildContext context, AppServices s) {
     final z = context.z;
+    final t = S.of(context);
     final user = s.auth.user.value;
     final cache = s.cache;
-    final name = user?.name ?? 'Guest';
+    final name = user?.name ?? t.guest;
     final initial = name.isEmpty ? '?' : name[0].toUpperCase();
 
     return Column(
@@ -557,7 +570,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
             ),
             const SizedBox(width: ZSpace.s12),
             ZButton(
-              label: 'Sign out',
+              label: t.signOut,
               variant: ZButtonVariant.plain,
               size: ZButtonSize.sm,
               onPressed: () {
@@ -574,10 +587,10 @@ class _SettingsBodyState extends State<_SettingsBody> {
           leading: Icon(Icons.school_outlined, size: ZIcon.md, color: z.textSecondary),
           title: s.lms.name,
           subtitle: s.lms.host,
-          trailing: const ZBadge(label: 'Connected (demo)', tone: ZBadgeTone.success),
+          trailing: ZBadge(label: t.connectedDemo, tone: ZBadgeTone.success),
         ),
         const SizedBox(height: ZSpace.s16),
-        _label(context, 'Shared with your class'),
+        _label(context, t.sharedWithClass),
         ZCard(
           padding: ZSpace.s20,
           child: Column(
@@ -586,14 +599,14 @@ class _SettingsBodyState extends State<_SettingsBody> {
             children: [
               Row(
                 children: [
-                  _cacheStat(context, 'Reused', '${cache.hits}'),
-                  _cacheStat(context, 'Made new', '${cache.misses}'),
-                  _cacheStat(context, 'Reuse rate', '${(cache.hitRate * 100).round()}%'),
+                  _cacheStat(context, t.reused, '${cache.hits}'),
+                  _cacheStat(context, t.madeNew, '${cache.misses}'),
+                  _cacheStat(context, t.reuseRate, '${(cache.hitRate * 100).round()}%'),
                 ],
               ),
               const SizedBox(height: ZSpace.s12),
               Text(
-                '${formatTokens(cache.tokensSaved)} tokens saved',
+                t.tokensSaved(formatTokens(cache.tokensSaved)),
                 style: context.type.labelLarge?.copyWith(color: z.successText),
               ),
             ],
@@ -635,12 +648,13 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final z = context.z;
+    final label = section.label(S.of(context));
     final fg = selected ? z.accentText : z.text;
     return Semantics(
       selected: selected,
       child: Pressable(
         onTap: onTap,
-        semanticLabel: section.label,
+        semanticLabel: label,
         child: AnimatedContainer(
           duration: ZMotion.medium,
           curve: ZMotion.standard,
@@ -656,7 +670,7 @@ class _NavItem extends StatelessWidget {
               Icon(section.icon, size: ZIcon.md, color: selected ? z.accentText : z.textSecondary),
               const SizedBox(width: ZSpace.s12),
               Text(
-                section.label,
+                label,
                 style: (selected
                         ? ZType.withWeight(context.type.bodyLarge!, FontWeight.w500)
                         : context.type.bodyLarge)

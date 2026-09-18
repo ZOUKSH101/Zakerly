@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/strings.dart';
 import '../theme.dart';
 import 'icon_button.dart';
 
@@ -83,7 +84,7 @@ class ZDialogFrame extends StatelessWidget {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(ZSpace.s20, ZSpace.s16, ZSpace.s12, ZSpace.s16),
+                padding: const EdgeInsetsDirectional.fromSTEB(ZSpace.s20, ZSpace.s16, ZSpace.s12, ZSpace.s16),
                 child: Row(
                   children: [
                     Expanded(
@@ -105,7 +106,7 @@ class ZDialogFrame extends StatelessWidget {
                     ),
                     ZIconButton(
                       icon: Icons.close,
-                      tooltip: 'Close',
+                      tooltip: S.of(context).close,
                       onPressed: () => Navigator.of(context).maybePop(),
                     ),
                   ],

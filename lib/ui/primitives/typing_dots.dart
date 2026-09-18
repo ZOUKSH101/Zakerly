@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/strings.dart';
 import '../theme.dart';
 
 /// Three-dot "typing" indicator (textTertiary), bouncing in a loop while
@@ -45,7 +46,7 @@ class _ZTypingDotsState extends State<ZTypingDots> with SingleTickerProviderStat
     final z = context.z;
     return Semantics(
       liveRegion: true,
-      label: 'Tutor is typing',
+      label: S.of(context).tutorTyping,
       child: ExcludeSemantics(
         child: SizedBox(
           height: ZSpace.s12,

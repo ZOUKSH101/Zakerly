@@ -39,7 +39,7 @@ class ZBar extends StatelessWidget {
                   children: [
                     Container(color: z.raised2),
                     Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       child: Container(
                         width: constraints.maxWidth * value,
                         height: height,

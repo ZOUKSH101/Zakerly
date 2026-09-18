@@ -42,10 +42,12 @@ class ZSegmented<T> extends StatelessWidget {
             width: constraints.maxWidth,
             child: Stack(
               children: [
-                AnimatedPositioned(
+                // Directional, so the thumb stays under its label when the
+                // Row of labels mirrors in RTL.
+                AnimatedPositionedDirectional(
                   duration: ZMotion.medium,
                   curve: ZMotion.standard,
-                  left: width * (index < 0 ? 0 : index),
+                  start: width * (index < 0 ? 0 : index),
                   top: 0,
                   bottom: 0,
                   width: width,

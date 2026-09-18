@@ -72,6 +72,7 @@ class AppServices {
     final cache = GenerationCache(store);
     final providers = ProviderRegistry(budget: budget, hosted: llm, byok: (_, _) => llm);
     final courses = CourseRepository(lms);
+    final preferences = AppPreferences();
     return AppServices._(
       auth: MockAuth(), // -> Firebase Auth
       lms: lms,
@@ -88,7 +89,11 @@ class AppServices {
         courses: courses,
         budget: budget,
       ),
-      tutor: TutorService(providers: providers, scheduler: scheduler),
+      tutor: TutorService(
+        providers: providers,
+        scheduler: scheduler,
+        language: () => preferences.language,
+      ),
       animations: AnimationService(
         providers: providers,
         scheduler: scheduler,
@@ -96,7 +101,7 @@ class AppServices {
         budget: budget,
       ),
       session: StudySession(),
-      preferences: AppPreferences(),
+      preferences: preferences,
     );
   }
 

@@ -1,4 +1,5 @@
 ﻿import 'models.dart';
+import 'preferences.dart';
 
 /// Prompt templates. These are written for the real model; the mock parses
 /// the same markers so the demo exercises the production prompt shape.
@@ -11,12 +12,20 @@ class Prompts {
   static String summarize(String fileName, String text) =>
       'DOCUMENT: $fileName\n<<DOCUMENT>>\n$text\n<<END DOCUMENT>>';
 
-  static String tutorSystem(Course course, StudyMode mode) {
+  /// Marker line the mock model looks for; the real model just follows it.
+  static const arabicReplyLine =
+      'LANGUAGE: ARABIC. The student has the app in Arabic, so always reply in Arabic: '
+      'friendly, Egyptian-leaning Modern Standard Arabic, the way a senior student talks. '
+      'Keep English course terms, file names and section names in English, use Western '
+      'digits (1, 2, 3), and keep the [file · section] citations exactly as written.';
+
+  static String tutorSystem(Course course, StudyMode mode, {AppLanguage language = AppLanguage.english}) {
     final base = 'You are Zakerly, a tutor for ${course.code} ${course.name}. '
         'Answer ONLY from the course context provided. If the context does not '
         'contain the answer, say so and name the material the student should check. '
         'Cite sources inline as [file · section]. Reply in the language the student '
         'writes in (Arabic or English). Keep answers short and concrete.';
+    final lang = language == AppLanguage.arabic ? '\n$arabicReplyLine' : '';
     final style = switch (mode) {
       StudyMode.explain =>
         'MODE: EXPLAIN. Explain step by step, then give one worked example.',
@@ -27,7 +36,7 @@ class Prompts {
         'MODE: QUIZ. Write three short questions that test the concept, mixing '
             'true/false and free-text. Do not reveal answers until the student replies.',
     };
-    return '$base\n$style';
+    return '$base\n$style$lang';
   }
 
   static String tutor({

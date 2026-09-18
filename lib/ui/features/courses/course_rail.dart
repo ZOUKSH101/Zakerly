@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/app_services.dart';
 import '../../../core/budget.dart';
 import '../../../core/models.dart';
+import '../../../l10n/strings.dart';
 import '../../primitives/primitives.dart';
 import '../tutorial/tutorial_targets.dart';
 import 'course_sync.dart';
@@ -74,13 +75,6 @@ class _CourseRailState extends State<CourseRail> {
     }
   }
 
-  /// "5:01 pm", matching how the scheduler writes times.
-  String _formatTime(DateTime dt) {
-    final h12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final m = dt.minute.toString().padLeft(2, '0');
-    return '$h12:$m ${dt.hour < 12 ? 'am' : 'pm'}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final s = Services.of(context);
@@ -88,7 +82,8 @@ class _CourseRailState extends State<CourseRail> {
     return Container(
       decoration: BoxDecoration(
         color: z.raised,
-        border: Border(right: BorderSide(color: z.hairline)),
+        // The rail's inner edge: right in LTR, left once the row mirrors.
+        border: BorderDirectional(end: BorderSide(color: z.hairline)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,12 +124,13 @@ class _CourseRailState extends State<CourseRail> {
 
   Widget _buildCanvasSection(BuildContext context, AppServices s) {
     final z = context.z;
+    final t = S.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: ZSpace.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ZEyebrow('Canvas'),
+          ZEyebrow(t.canvas),
           const SizedBox(height: ZSpace.s8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -154,7 +150,7 @@ class _CourseRailState extends State<CourseRail> {
                             Icon(Icons.check_circle, size: ZIcon.sm, color: z.success),
                             const SizedBox(width: ZSpace.s4),
                             Text(
-                              'Synced',
+                              t.synced,
                               style: context.type.bodySmall?.copyWith(color: z.successText),
                             ),
                           ],
@@ -164,8 +160,8 @@ class _CourseRailState extends State<CourseRail> {
                           message: s.lms.host,
                           child: Text(
                             s.courses.lastSynced != null
-                                ? 'Synced ${_formatTime(s.courses.lastSynced!)}'
-                                : 'Not synced yet',
+                                ? t.syncedAt(t.clock(s.courses.lastSynced!))
+                                : t.notSyncedYet,
                             style: context.type.bodySmall?.copyWith(color: z.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -176,7 +172,7 @@ class _CourseRailState extends State<CourseRail> {
               const SizedBox(width: ZSpace.s8),
               ZButton(
                 key: TutorialTargets.sync,
-                label: 'Sync',
+                label: t.sync,
                 size: ZButtonSize.sm,
                 variant: ZButtonVariant.tonal,
                 leading: Icons.sync,
@@ -188,9 +184,9 @@ class _CourseRailState extends State<CourseRail> {
           if (s.courses.error != null) ...[
             const SizedBox(height: ZSpace.s4),
             Tooltip(
-              message: s.courses.error!,
+              message: t.syncFailed,
               child: Text(
-                s.courses.error!,
+                t.syncFailed,
                 style: context.type.bodySmall?.copyWith(color: z.danger),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -205,11 +201,12 @@ class _CourseRailState extends State<CourseRail> {
 
   Widget _buildCourseList(BuildContext context, AppServices s) {
     final courses = s.courses.courses;
+    final t = S.of(context);
     if (courses.isEmpty) {
-      return const ZEmpty(
+      return ZEmpty(
         icon: Icons.cloud_sync_outlined,
-        title: 'No courses yet',
-        message: 'Tap Sync above to bring them in from Canvas.',
+        title: t.noCoursesTitle,
+        message: t.noCoursesBody,
       );
     }
 
@@ -240,7 +237,7 @@ class _CourseRailState extends State<CourseRail> {
                 ),
               if (remaining > 0)
                 Text(
-                  '+$remaining more',
+                  t.more(remaining),
                   style: context.type.bodySmall?.copyWith(color: context.z.textSecondary),
                 ),
             ],
@@ -252,6 +249,7 @@ class _CourseRailState extends State<CourseRail> {
 
   Widget _buildFooter(BuildContext context, AppServices s) {
     final z = context.z;
+    final t = S.of(context);
     final user = s.auth.user.value;
     final initial = (user != null && user.name.isNotEmpty) ? user.name[0].toUpperCase() : '?';
     final isPro = s.budget.tier != PlanTier.free;
@@ -270,7 +268,7 @@ class _CourseRailState extends State<CourseRail> {
           const SizedBox(width: ZSpace.s8),
           Expanded(
             child: Text(
-              user?.name ?? 'Guest',
+              user?.name ?? t.guest,
               style: context.type.bodyMedium?.copyWith(color: z.text),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -278,14 +276,14 @@ class _CourseRailState extends State<CourseRail> {
           ),
           const SizedBox(width: ZSpace.s8),
           ZBadge(
-            label: s.budget.plan.name,
+            label: t.planName(s.budget.tier),
             tone: isPro ? ZBadgeTone.accent : ZBadgeTone.neutral,
           ),
           const SizedBox(width: ZSpace.s4),
           ZIconButton(
             key: TutorialTargets.settings,
             icon: Icons.tune,
-            tooltip: 'Settings',
+            tooltip: t.settings,
             onPressed: widget.onOpenSettings,
           ),
         ],
@@ -313,6 +311,8 @@ class _CourseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final z = context.z;
+    final t = S.of(context);
+    final planName = t.planName(s.budget.tier);
     final total = course.files.length;
     final readyCount = course.readyCount;
     final ready = total > 0 && course.isFullyIndexed;
@@ -326,29 +326,30 @@ class _CourseTile extends StatelessWidget {
 
     if (course.hasPendingWork) {
       // The ring already shows progress; no extra spinner to squeeze the name.
-      statusText = 'Getting ready…';
+      statusText = t.courseGettingReady;
     } else if (course.isFullyIndexed) {
-      statusText = 'Ready';
+      statusText = t.courseReady;
     } else if (!course.hasStarted && canIndex) {
-      statusText = 'Not started';
+      statusText = t.courseNotStarted;
     } else if (!course.hasStarted) {
-      statusText = 'Needs Pro';
+      statusText = t.needsPro;
       trailing = Tooltip(
-        message: 'The ${s.budget.plan.name} plan covers ${s.budget.plan.maxCourses} courses',
+        message: t.planCovers(planName, s.budget.plan.maxCourses),
         child: Icon(Icons.lock_outline, size: ZIcon.sm, color: z.textTertiary),
       );
     } else if (failed > 0) {
-      statusText = '$failed didn\'t load';
+      statusText = t.filesFailed(failed);
       statusColor = z.danger;
     } else {
-      statusText = '$readyCount/$total ready';
+      statusText = t.readyOfTotal(readyCount, total);
     }
 
+    final comma = t.isArabic ? '، ' : ', ';
     final lockedSuffix = (!course.hasStarted && !canIndex)
-        ? '. The ${s.budget.plan.name} plan covers ${s.budget.plan.maxCourses} courses'
+        ? '. ${t.planCovers(planName, s.budget.plan.maxCourses)}'
         : '';
-    final semanticsLabel =
-        '${course.name}, ${course.code}, $statusText$lockedSuffix${selected ? ', selected' : ''}';
+    final semanticsLabel = '${course.name}$comma${course.code}$comma$statusText$lockedSuffix'
+        '${selected ? t.selectedSuffix : ''}';
 
     return FadeSlideIn(
       index: index,

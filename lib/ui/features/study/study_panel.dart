@@ -10,6 +10,7 @@ import 'package:zakerly/core/app_services.dart';
 import 'package:zakerly/core/models.dart';
 import 'package:zakerly/core/scheduler.dart';
 import 'package:zakerly/core/util.dart';
+import 'package:zakerly/l10n/strings.dart';
 import 'package:zakerly/ui/features/tutorial/tutorial_targets.dart';
 import 'package:zakerly/ui/primitives/primitives.dart';
 
@@ -178,10 +179,15 @@ class _StudyPanelState extends State<StudyPanel> {
     };
     return [
       for (final job in s.scheduler.open)
-        if (job.label.startsWith('Process ') &&
-            pendingNames.contains(job.label.substring('Process '.length)))
-          job,
+        if (pendingNames.contains(_processSubject(job))) job,
     ];
+  }
+
+  /// The file a "process" job works on, or null for any other job.
+  static String? _processSubject(Job job) {
+    if (job.kind == JobKind.process) return job.subject;
+    const prefix = 'Process ';
+    return job.label.startsWith(prefix) ? job.label.substring(prefix.length) : null;
   }
 
   @override
@@ -223,10 +229,11 @@ class _StudyPanelState extends State<StudyPanel> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < ZLayout.compactBreakpoint;
+        final t = S.of(context);
         final segmented = ZSegmented<StudyMode>(
           key: TutorialTargets.modes,
-          segments: [for (final m in StudyMode.values) (m, m.label)],
-          tooltips: [for (final m in StudyMode.values) m.tooltip],
+          segments: [for (final m in StudyMode.values) (m, t.modeLabel(m))],
+          tooltips: [for (final m in StudyMode.values) t.modeTooltip(m)],
           selected: s.session.mode,
           onChanged: s.session.setMode,
         );
@@ -295,9 +302,10 @@ class _StudyPanelState extends State<StudyPanel> {
       listenable: s.budget,
       builder: (context, _) {
         final z = context.z;
+        final t = S.of(context);
         return Semantics(
           button: true,
-          label: 'Budget: ${formatTokens(s.budget.remaining)} tokens left. Open Status',
+          label: t.budgetPillSemantics(formatTokens(s.budget.remaining)),
           child: Pressable(
             onTap: widget.onOpenStatus,
             child: Glass(
@@ -316,7 +324,7 @@ class _StudyPanelState extends State<StudyPanel> {
                     ),
                     const SizedBox(width: ZSpace.s8),
                     Text(
-                      '${formatTokens(s.budget.remaining)} left',
+                      t.tokensLeft(formatTokens(s.budget.remaining)),
                       style: context.type.labelLarge?.copyWith(color: z.text),
                     ),
                   ],
@@ -332,15 +340,16 @@ class _StudyPanelState extends State<StudyPanel> {
   // ---- Processing note ----------------------------------------------------
 
   Widget? _buildProcessingNote(BuildContext context, AppServices s, Course course) {
+    final t = S.of(context);
     if (course.hasPendingWork) {
       final jobs = _pendingJobsFor(s, course);
       return _buildNote(
         context,
-        text: 'Getting ${course.code} ready. You can ask about the files that are done.',
+        text: t.gettingCourseReady(course.code),
         action: jobs.isEmpty
             ? null
             : ZButton(
-                label: 'Process now',
+                label: t.processNow,
                 variant: ZButtonVariant.tonal,
                 size: ZButtonSize.sm,
                 onPressed: () {
@@ -354,8 +363,7 @@ class _StudyPanelState extends State<StudyPanel> {
     if (!course.hasStarted && !s.ingestion.canIndex(course)) {
       return _buildNote(
         context,
-        text: 'The ${s.budget.plan.name} plan covers ${s.budget.plan.maxCourses} courses. '
-            'Switch to Pro in Settings to open this one.',
+        text: t.planLimitNote(t.planName(s.budget.tier), s.budget.plan.maxCourses),
       );
     }
     return null;
@@ -391,10 +399,11 @@ class _StudyPanelState extends State<StudyPanel> {
     List<Course> courses,
   ) {
     if (courses.isEmpty || course == null) {
-      return const ZEmpty(
+      final t = S.of(context);
+      return ZEmpty(
         icon: Icons.school_outlined,
-        title: 'Sync your courses to start',
-        message: 'Tap Sync next to Canvas and I\'ll bring in your slides and readings.',
+        title: t.syncToStartTitle,
+        message: t.syncToStartBody,
       );
     }
 
@@ -468,15 +477,14 @@ class _StudyPanelState extends State<StudyPanel> {
   /// about, and three starters that send on tap.
   Widget _buildEmptyThread(BuildContext context, AppServices s, Course course) {
     final z = context.z;
-    const starters = [
-      (Icons.notes_rounded, 'Sum up the main ideas'),
-      (Icons.quiz_outlined, 'Quiz me on this week'),
-      (Icons.lightbulb_outline_rounded, 'Explain the hardest part'),
+    final t = S.of(context);
+    final starters = [
+      (Icons.notes_rounded, t.starterSummary),
+      (Icons.quiz_outlined, t.starterQuiz),
+      (Icons.lightbulb_outline_rounded, t.starterHardest),
     ];
     final ready = course.files.isNotEmpty && course.isFullyIndexed;
-    final subline = ready
-        ? 'Ready. Ask me anything from ${course.name}.'
-        : 'Ask me anything from ${course.name}. I\'ll answer from your course files.';
+    final subline = ready ? t.homeReady(course.name) : t.homeNotReady(course.name);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -498,7 +506,7 @@ class _StudyPanelState extends State<StudyPanel> {
                         child: Column(
                           children: [
                             Text(
-                              'What are we studying today?',
+                              t.homeTitle,
                               textAlign: TextAlign.center,
                               style: context.type.displaySmall?.copyWith(color: z.text),
                             ),
@@ -546,6 +554,7 @@ class _StudyPanelState extends State<StudyPanel> {
     VoidCallback? onAnimate,
   }) {
     final z = context.z;
+    final t = S.of(context);
     if (msg.author == Author.student) {
       // Brand bubble shape: lg corners, the one nearest the speaker at sm.
       return Container(
@@ -585,7 +594,7 @@ class _StudyPanelState extends State<StudyPanel> {
                   const SizedBox(width: ZSpace.s8),
                   Expanded(
                     child: Text(
-                      msg.text,
+                      msg.notice == null ? msg.text : t.tutorNotice(msg.notice!),
                       style: context.type.bodyLarge?.copyWith(color: z.text),
                     ),
                   ),
@@ -594,7 +603,10 @@ class _StudyPanelState extends State<StudyPanel> {
       );
     }
 
-    final parsed = parseAnswer(msg.text, fallback: msg.citations);
+    final parsed = parseAnswer(
+      msg.notice == null ? msg.text : t.tutorNotice(msg.notice!),
+      fallback: msg.citations,
+    );
     final body = context.type.bodyLarge?.copyWith(color: z.text);
     return ZCard(
       padding: ZSpace.s20,
@@ -644,12 +656,10 @@ class _StudyPanelState extends State<StudyPanel> {
               children: [
                 if (showAnimate)
                   Tooltip(
-                    message: onAnimate == null
-                        ? 'That\'s all the new animations for today'
-                        : 'Draw this answer as a short animation',
+                    message: onAnimate == null ? t.animateLimitTooltip : t.animateTooltip,
                     child: ZButton(
                       key: const ValueKey('animate-answer'),
-                      label: 'Animate it',
+                      label: t.animateIt,
                       leading: Icons.play_circle_outline_rounded,
                       variant: ZButtonVariant.tonal,
                       size: ZButtonSize.sm,
@@ -667,6 +677,7 @@ class _StudyPanelState extends State<StudyPanel> {
 
   Widget _buildMetaCaption(BuildContext context, ChatMessage msg) {
     final z = context.z;
+    final t = S.of(context);
     final saved = msg.naiveTokens > 0
         ? (((msg.naiveTokens - msg.tokens) / msg.naiveTokens) * 100).clamp(0, 100).round()
         : 0;
@@ -674,9 +685,9 @@ class _StudyPanelState extends State<StudyPanel> {
       TextSpan(
         style: context.type.bodySmall?.copyWith(color: z.textSecondary),
         children: [
-          TextSpan(text: '${formatTokens(msg.tokens)} tokens · '),
+          TextSpan(text: t.metaTokens(formatTokens(msg.tokens))),
           TextSpan(
-            text: '$saved% less than sending the full files',
+            text: t.metaSaved(saved),
             style: TextStyle(color: z.successText),
           ),
         ],
@@ -688,6 +699,7 @@ class _StudyPanelState extends State<StudyPanel> {
 
   Widget _buildComposer(BuildContext context, AppServices s, Course course) {
     final z = context.z;
+    final t = S.of(context);
     final thread = s.tutor.thread(course.id);
     final lastPending = thread.isNotEmpty && thread.last.pending;
     final included = s.session.includedFileIds(course);
@@ -701,17 +713,19 @@ class _StudyPanelState extends State<StudyPanel> {
     Color captionColor = z.textSecondary;
     if (text.trim().isEmpty) {
       caption = included.isEmpty
-          ? 'Your files aren\'t ready yet. You can still ask.'
-          : 'Using ${_count(included.length, 'file')}. Change them in Status.';
+          ? t.composerFilesNotReady
+          : t.composerUsingFiles(included.length);
     } else {
       final plan = s.tutor.plan(course, included, text, s.session.mode);
       if (plan.chunks.isEmpty) {
-        caption = 'Nothing in your files matches that, so this one is free.';
+        caption = t.composerNoMatch;
         captionColor = z.warning;
       } else {
-        caption = 'About ${formatTokens(plan.promptTokens)} tokens from '
-            '${_count(plan.chunks.length, 'section')}. '
-            'The full files would cost ${formatTokens(plan.naiveTokens)}.';
+        caption = t.composerEstimate(
+          formatTokens(plan.promptTokens),
+          plan.chunks.length,
+          formatTokens(plan.naiveTokens),
+        );
       }
     }
 
@@ -723,15 +737,16 @@ class _StudyPanelState extends State<StudyPanel> {
         ZComposer(
           controller: _controller,
           focusNode: _focusNode,
-          semanticLabel: 'Ask the tutor',
-          hint: 'Ask about ${course.code}…',
+          semanticLabel: t.askTheTutor,
+          hint: t.askAbout(course.code),
+          sendTooltip: t.send,
           canSend: canSend,
           onSend: () => _send(s, course),
           actions: [
             ZIconButton(
               key: TutorialTargets.visualize,
               icon: Icons.play_circle_outline_rounded,
-              tooltip: 'Animate the last answer',
+              tooltip: t.animateLastAnswer,
               onPressed: canVisualize ? () => widget.onVisualize(course, lastConcept) : null,
             ),
           ],
@@ -751,9 +766,6 @@ class _StudyPanelState extends State<StudyPanel> {
   }
 }
 
-/// "1 file", "3 files".
-String _count(int n, String noun) => '$n $noun${n == 1 ? '' : 's'}';
-
 /// Small numbered superscript pill for an inline source. Hover shows the
 /// file and section; screen readers hear "source 1".
 class _CiteMark extends StatelessWidget {
@@ -769,7 +781,7 @@ class _CiteMark extends StatelessWidget {
     return Tooltip(
       message: '${stripExtension(source.fileName)} · ${source.heading}',
       child: Semantics(
-        label: 'Source $number: ${source.fileName}, ${source.heading}',
+        label: S.of(context).sourceSemantics(number, source.fileName, source.heading),
         excludeSemantics: true,
         child: Container(
           constraints: const BoxConstraints(minWidth: 16),

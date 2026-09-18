@@ -7,10 +7,15 @@
 //   <800     : bottom tabs (Courses / Study / Status).
 //
 // No page-level scrolling is introduced here; each panel manages its own.
+//
+// RTL (Arabic): the Rows mirror on their own, so the course rail sits on the
+// right, the chat in the middle and Status on the left, which is the
+// right-to-left reading order. The end drawer opens from the left.
 import 'package:flutter/material.dart';
 
 import '../core/app_services.dart';
 import '../core/models.dart';
+import '../l10n/strings.dart';
 import 'features/animation/animation_window.dart';
 import 'features/courses/course_rail.dart';
 import 'features/courses/course_sync.dart';
@@ -110,6 +115,7 @@ class _WorkspaceState extends State<Workspace> {
   }
 
   Widget _buildNarrow(BuildContext context) {
+    final t = S.of(context);
     final pages = <Widget>[
       CourseRail(onOpenSettings: _openSettings),
       StudyPanel(
@@ -125,10 +131,10 @@ class _WorkspaceState extends State<Workspace> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
         onDestinationSelected: (i) => setState(() => _tabIndex = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.school_outlined), label: 'Courses'),
-          NavigationDestination(icon: Icon(Icons.chat_bubble_outline), label: 'Study'),
-          NavigationDestination(icon: Icon(Icons.insights_outlined), label: 'Status'),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.school_outlined), label: t.navCourses),
+          NavigationDestination(icon: const Icon(Icons.chat_bubble_outline), label: t.navStudy),
+          NavigationDestination(icon: const Icon(Icons.insights_outlined), label: t.navStatus),
         ],
       ),
     );

@@ -65,24 +65,15 @@ class Course {
   bool get hasStarted => files.any((f) => f.status != FileStatus.unprocessed);
 }
 
+/// Labels and tooltips live in `lib/l10n/strings.dart` (`S.modeLabel`).
 enum StudyMode { explain, socratic, quiz }
 
-extension StudyModeLabel on StudyMode {
-  String get label => switch (this) {
-        StudyMode.explain => 'Explain',
-        StudyMode.socratic => 'Guide me',
-        StudyMode.quiz => 'Quiz me',
-      };
-
-  /// Short hint shown as the mode switch tooltip.
-  String get tooltip => switch (this) {
-        StudyMode.explain => 'Get a clear answer',
-        StudyMode.socratic => 'Work it out with hints',
-        StudyMode.quiz => 'Test yourself',
-      };
-}
-
 enum Author { student, tutor }
+
+/// A reply the tutor writes itself, without the model. The UI shows the
+/// localized sentence for it (`S.tutorNotice`); [ChatMessage.text] keeps an
+/// English copy for the prompt history.
+enum TutorNotice { notFound, outOfBudget, failed }
 
 class Citation {
   const Citation(this.fileName, this.heading);
@@ -100,6 +91,7 @@ class ChatMessage {
   String text;
   bool pending;
   bool failed = false;
+  TutorNotice? notice;
   List<Citation> citations = const [];
   int tokens = 0;
 

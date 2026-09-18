@@ -10,12 +10,30 @@ enum JobLane { interactive, background }
 
 enum JobState { queued, waiting, running, done, failed }
 
+/// Why a job is still waiting. The UI words it (`S.waitReason`).
+enum WaitReason { freeSlot, pacing, liveFirst, quietMoment }
+
+/// What a job is for, so the UI can title it in the student's language
+/// (`S.jobTitle`). [other] falls back to the raw [Job.label].
+enum JobKind { process, answer, animation, other }
+
+/// Thrown when a job would go over the active budget.
+class OutOfBudgetError extends StateError {
+  OutOfBudgetError()
+      : super("You've used this month's budget. Change your plan or key in Settings to keep going.");
+}
+
 class Job {
-  Job._(this.id, this.label, this.lane, this.estimatedTokens, this._run) {
+  Job._(this.id, this.label, this.lane, this.estimatedTokens, this._run, this.kind, this.subject) {
     _completer.future.ignore(); // background jobs may fail with no listener
   }
 
+  /// [label] is the English log line (also used for usage history).
   final String id, label;
+  final JobKind kind;
+
+  /// The file name, course code or concept the job is about.
+  final String? subject;
   JobLane lane;
   final int estimatedTokens;
   final Future<int> Function() _run;
@@ -23,7 +41,8 @@ class Job {
   final DateTime createdAt = DateTime.now();
 
   JobState state = JobState.queued;
-  String? waitReason, error;
+  WaitReason? waitReason;
+  String? error;
   int tokensUsed = 0;
   DateTime? finishedAt;
 
@@ -72,8 +91,6 @@ class RequestScheduler extends ChangeNotifier {
   final BudgetController budget;
   final policy = SchedulerPolicy();
 
-  static const _outOfBudget =
-      'You\'ve used this month\'s budget. Change your plan or key in Settings to keep going.';
   final List<Job> _jobs = [];
   final List<DateTime> _starts = [];
   Timer? _timer; // Ticks only while jobs are waiting.
@@ -90,8 +107,10 @@ class RequestScheduler extends ChangeNotifier {
     required JobLane lane,
     required int estimatedTokens,
     required Future<int> Function() run,
+    JobKind kind = JobKind.other,
+    String? subject,
   }) {
-    final job = Job._('job-${++_seq}', label, lane, estimatedTokens, run);
+    final job = Job._('job-${++_seq}', label, lane, estimatedTokens, run, kind, subject);
     _jobs.add(job);
     if (_jobs.length > 80) _jobs.removeWhere((j) => !j.isOpen && _jobs.length > 60);
     notifyListeners();
@@ -130,23 +149,24 @@ class RequestScheduler extends ChangeNotifier {
     var changed = false;
     for (final job in waiting) {
       final background = job.lane == JobLane.background;
-      final String? reason;
+      final WaitReason? reason;
       if (runningCount >= policy.maxConcurrent) {
-        reason = 'Waiting for a free slot';
+        reason = WaitReason.freeSlot;
       } else if (_starts.length >= policy.requestsPerMinute) {
-        reason = 'Keeping to ${policy.requestsPerMinute} requests a minute';
+        reason = WaitReason.pacing;
       } else if (background && liveWaiting) {
-        reason = 'Letting your questions go first';
+        reason = WaitReason.liveFirst;
       } else if (background && !offPeak && runningCount > 0) {
         // Outside the off-peak window, background work only runs when the
         // line is quiet, one job at a time.
-        reason = 'Waiting for a quiet moment';
+        reason = WaitReason.quietMoment;
       } else if (!budget.canSpend(job.estimatedTokens)) {
+        final err = OutOfBudgetError();
         job
           ..state = JobState.failed
-          ..error = _outOfBudget
+          ..error = err.message
           ..finishedAt = now;
-        job._completer.completeError(StateError(_outOfBudget));
+        job._completer.completeError(err);
         changed = true;
         continue;
       } else {

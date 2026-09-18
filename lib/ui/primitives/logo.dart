@@ -125,6 +125,11 @@ class _ZLogoState extends State<ZLogo> with SingleTickerProviderStateMixin {
     final arabic = label == null
         ? null
         : ZType.arabic(ZType.withWeight(label, FontWeight.w500)).copyWith(color: z.textSecondary);
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final arabicName = Directionality(
+      textDirection: TextDirection.rtl,
+      child: Text('ذاكرلي', style: arabic),
+    );
 
     return Semantics(
       label: 'Zakerly',
@@ -135,15 +140,15 @@ class _ZLogoState extends State<ZLogo> with SingleTickerProviderStateMixin {
           children: [
             mark,
             const SizedBox(width: ZSpace.s12),
+            // BRAND.md: in an RTL UI the lockup mirrors (the Row puts the
+            // mark on the right) and the Arabic name moves on top.
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (rtl) arabicName,
                 Text('Zakerly', style: english),
-                Directionality(
-                  textDirection: TextDirection.rtl,
-                  child: Text('ذاكرلي', style: arabic),
-                ),
+                if (!rtl) arabicName,
               ],
             ),
           ],

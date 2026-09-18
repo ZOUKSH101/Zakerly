@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../l10n/strings.dart';
 import '../theme.dart';
 import 'pressable.dart';
 
@@ -21,7 +22,7 @@ class ZComposer extends StatefulWidget {
     this.hint,
     this.semanticLabel,
     this.actions = const [],
-    this.sendTooltip = 'Send',
+    this.sendTooltip,
   });
 
   final TextEditingController controller;
@@ -35,7 +36,9 @@ class ZComposer extends StatefulWidget {
 
   /// Small controls shown before the send button (e.g. an animate button).
   final List<Widget> actions;
-  final String sendTooltip;
+
+  /// Defaults to the localized "Send".
+  final String? sendTooltip;
 
   @override
   State<ZComposer> createState() => _ZComposerState();
@@ -143,7 +146,7 @@ class _ZComposerState extends State<ZComposer> {
           const SizedBox(width: ZSpace.s8),
           _SendButton(
             enabled: widget.canSend,
-            tooltip: widget.sendTooltip,
+            tooltip: widget.sendTooltip ?? S.of(context).send,
             onPressed: widget.onSend,
           ),
         ],

@@ -40,6 +40,10 @@ class MockLlm implements LlmProvider {
     final first = sources.first;
     final s1 = _sentences(first.text);
 
+    // The app is in Arabic (Prompts.arabicReplyLine): a short Arabic reply
+    // around the English course text, the way a real model would quote it.
+    if (system.contains('LANGUAGE: ARABIC')) return _tutorArabic(system, question, sources);
+
     if (system.contains('MODE: SOCRATIC')) {
       return 'Let\'s work this one out together.\n\n'
           'Your notes on ${first.heading} say: "${s1.first}" [${first.file} · ${first.heading}]\n\n'
@@ -62,6 +66,39 @@ class MockLlm implements LlmProvider {
       b.write('\n\nRelated: ${_sentences(other.text).first} [${other.file} · ${other.heading}]');
     }
     b.write('\n\nWant to see it move? Tap Animate it.');
+    return b.toString();
+  }
+
+  String _tutorArabic(
+    String system,
+    String question,
+    List<({String file, String heading, String text})> sources,
+  ) {
+    final first = sources.first;
+    final s1 = _sentences(first.text);
+    final cite = '[${first.file} · ${first.heading}]';
+
+    if (system.contains('MODE: SOCRATIC')) {
+      return 'يلا نحلّها سوا.\n\n'
+          'ملاحظاتك عن ${first.heading} بتقول: "${s1.first}" $cite\n\n'
+          'على أساس القاعدة دي، تفتكر إيه اللي بيحصل في اللي سألت عنه ("$question")، وليه؟ '
+          'اكتبلي تفكيرك وأنا أراجعه معاك.';
+    }
+    if (system.contains('MODE: QUIZ')) {
+      final second = sources.length > 1 ? sources[1] : first;
+      return 'تلات أسئلة سريعة من ملفاتك:\n\n'
+          '1. صح ولا غلط: ${s1.first}\n'
+          '2. اشرح بأسلوبك: ${first.heading}.\n'
+          '3. إيه أهم فكرة في "${second.heading}"؟\n\n'
+          'جاوب في الشات وأنا هصحّحهم. $cite';
+    }
+
+    final b = StringBuffer('باختصار، ده اللي في ملفاتك: ${s1.take(2).join(' ')} $cite');
+    if (sources.length > 1) {
+      final other = sources[1];
+      b.write('\n\nوكمان: ${_sentences(other.text).first} [${other.file} · ${other.heading}]');
+    }
+    b.write('\n\nعايز تشوفها بتتحرك؟ دوس "حرّكها".');
     return b.toString();
   }
 

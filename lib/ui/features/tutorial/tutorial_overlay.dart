@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../l10n/strings.dart';
 import '../../primitives/primitives.dart';
 import 'tutorial_copy.dart';
 
@@ -141,22 +142,26 @@ class _TutorialOverlayState extends State<_TutorialOverlay> with WidgetsBindingO
     if (!_isValid(_index)) return const SizedBox.shrink();
 
     final z = context.z;
+    final t = S.of(context);
     final reduced = MediaQuery.disableAnimationsOf(context);
     final screen = MediaQuery.sizeOf(context);
     final target = _rectFor(tutorialSteps[_index].target)!.inflate(8);
     final visible = _visibleIndexes;
     final pos = visible.indexOf(_index);
-    final step = tutorialSteps[_index];
+    final step = tutorialStepsFor(t)[_index];
     final isLast = pos == visible.length - 1;
-    final side = _bestSide(target, screen);
+    // "Forward" follows the reading direction: the right arrow in English,
+    // the left arrow in Arabic.
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final side = _bestSide(target, screen, rtl: rtl);
 
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
         const SingleActivator(LogicalKeyboardKey.escape): _skip,
         const SingleActivator(LogicalKeyboardKey.enter): _next,
-        const SingleActivator(LogicalKeyboardKey.arrowRight): _next,
+        const SingleActivator(LogicalKeyboardKey.arrowRight): rtl ? _back : _next,
         const SingleActivator(LogicalKeyboardKey.arrowDown): _next,
-        const SingleActivator(LogicalKeyboardKey.arrowLeft): _back,
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): rtl ? _next : _back,
         const SingleActivator(LogicalKeyboardKey.arrowUp): _back,
       },
       child: Focus(
@@ -167,7 +172,7 @@ class _TutorialOverlayState extends State<_TutorialOverlay> with WidgetsBindingO
           namesRoute: true,
           explicitChildNodes: true,
           liveRegion: true,
-          label: 'Tutorial step ${pos + 1} of ${visible.length}: ${step.title}. ${step.body}',
+          label: t.tutorialSemantics(pos + 1, visible.length, step.title, step.body),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -207,7 +212,10 @@ class _TutorialOverlayState extends State<_TutorialOverlay> with WidgetsBindingO
   }
 }
 
-_Side _bestSide(Rect target, Size screen) {
+/// The side of [target] with the most room. Placement is physical (it is
+/// about screen space), but a tie between left and right goes to the
+/// reading direction's "after" side: right in LTR, left in RTL.
+_Side _bestSide(Rect target, Size screen, {bool rtl = false}) {
   final spaceTop = target.top;
   final spaceBottom = screen.height - target.bottom;
   final spaceLeft = target.left;
@@ -215,6 +223,7 @@ _Side _bestSide(Rect target, Size screen) {
   final maxSpace = [spaceTop, spaceBottom, spaceLeft, spaceRight].reduce(math.max);
   if (maxSpace == spaceBottom) return _Side.bottom;
   if (maxSpace == spaceTop) return _Side.top;
+  if (rtl) return maxSpace == spaceLeft ? _Side.left : _Side.right;
   if (maxSpace == spaceRight) return _Side.right;
   return _Side.left;
 }
@@ -378,6 +387,7 @@ class _BubbleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final z = context.z;
+    final t = S.of(context);
 
     // Arrow sits just outside the card, on the edge nearest the target,
     // pointing back at it.
@@ -400,7 +410,7 @@ class _BubbleCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Step $stepNumber of $stepTotal',
+                  t.stepOf(stepNumber, stepTotal),
                   style: context.type.labelSmall?.copyWith(color: z.textTertiary),
                 ),
                 const SizedBox(height: ZSpace.s4),
@@ -413,7 +423,7 @@ class _BubbleCard extends StatelessWidget {
                   children: [
                     if (!isLast)
                       ZButton(
-                        label: 'Skip',
+                        label: t.skip,
                         variant: ZButtonVariant.plain,
                         size: ZButtonSize.sm,
                         onPressed: onSkip,
@@ -424,7 +434,7 @@ class _BubbleCard extends StatelessWidget {
                       children: [
                         if (canGoBack) ...[
                           ZButton(
-                            label: 'Back',
+                            label: t.back,
                             variant: ZButtonVariant.tonal,
                             size: ZButtonSize.sm,
                             onPressed: onBack,
@@ -432,7 +442,7 @@ class _BubbleCard extends StatelessWidget {
                           const SizedBox(width: ZSpace.s8),
                         ],
                         ZButton(
-                          label: isLast ? 'Done' : 'Next',
+                          label: isLast ? t.done : t.next,
                           size: ZButtonSize.sm,
                           onPressed: onNext,
                         ),
