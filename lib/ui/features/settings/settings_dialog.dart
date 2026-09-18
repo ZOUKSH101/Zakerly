@@ -11,6 +11,7 @@ import '../../../core/budget.dart';
 import '../../../core/providers.dart';
 import '../../../core/util.dart';
 import '../../primitives/primitives.dart';
+import '../tutorial/tutorial.dart';
 
 Future<void> showSettingsDialog(BuildContext context) {
   return showZDialog(
@@ -137,7 +138,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         _planCard(context, s, PlanTier.pro),
         if (stacked) const SizedBox(height: ZSpace.s12) else const Spacer(),
         Text(
-          "Demo: payments aren't connected in this build.",
+          "Payments aren't hooked up in this demo yet.",
           style: context.type.bodySmall,
         ),
       ],
@@ -201,7 +202,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         const ZEyebrow('Model keys'),
         const SizedBox(height: ZSpace.s8),
         Text(
-          'Bring your own key. Keys stay on this device and go only to the provider.',
+          'Bring your own key — it stays on this device and goes straight to the provider.',
           style: context.type.bodySmall,
         ),
         const SizedBox(height: ZSpace.s12),
@@ -379,6 +380,13 @@ class _SettingsBodyState extends State<_SettingsBody> {
             s.auth.signOut();
           },
         ),
+        const SizedBox(height: ZSpace.s8),
+        ZButton(
+          label: 'Show tutorial again',
+          variant: ZButtonVariant.plain,
+          size: ZButtonSize.sm,
+          onPressed: () => showTutorial(context),
+        ),
         const SizedBox(height: ZSpace.s20),
         ZRow(
           title: s.lms.name,
@@ -408,8 +416,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
               ),
               const SizedBox(height: ZSpace.s4),
               Text(
-                'Animations and file summaries are generated once per course and '
-                'reused by every student.',
+                'Generated once per course, then reused by everyone.',
                 style: context.type.bodySmall,
               ),
             ],

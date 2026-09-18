@@ -15,6 +15,7 @@ import 'features/courses/course_rail.dart';
 import 'features/settings/settings_dialog.dart';
 import 'features/status/status_panel.dart';
 import 'features/study/study_panel.dart';
+import 'features/tutorial/tutorial.dart';
 
 /// Breakpoints from CONTRACT.md.
 class _Breakpoints {
@@ -33,6 +34,16 @@ class Workspace extends StatefulWidget {
 class _WorkspaceState extends State<Workspace> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _tabIndex = 1; // Courses / Study / Status -> default to Study.
+
+  @override
+  void initState() {
+    super.initState();
+    // Shown once per browser (see TutorialStorage) — fired after the first
+    // frame so it never competes with this screen's own build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) maybeShowTutorial(context);
+    });
+  }
 
   void _openSettings() => showSettingsDialog(context);
 

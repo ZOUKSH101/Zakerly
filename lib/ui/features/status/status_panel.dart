@@ -211,7 +211,7 @@ class _ContextCard extends StatelessWidget {
               if (course != null) ...[
                 const SizedBox(height: ZSpace.s4),
                 Text(
-                  'Pasting these in full: ~${formatTokens(includedTokens)} tokens',
+                  'Full files: ~${formatTokens(includedTokens)} tokens',
                   style: context.type.bodySmall,
                 ),
               ],
@@ -302,8 +302,8 @@ class _QueueCard extends StatelessWidget {
                 ],
               ),
               Text(
-                '≤ ${policy.requestsPerMinute}/min · ${scheduler.requestsThisMinute} this minute · '
-                '${scheduler.runningCount}/${policy.maxConcurrent} running',
+                'Up to ${policy.requestsPerMinute}/min · ${scheduler.runningCount}/'
+                '${policy.maxConcurrent} running now',
                 style: context.type.bodySmall,
               ),
               const SizedBox(height: ZSpace.s4),

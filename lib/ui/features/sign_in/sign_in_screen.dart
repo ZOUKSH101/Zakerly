@@ -6,8 +6,9 @@ import '../../primitives/primitives.dart';
 
 enum _Pending { none, email, google }
 
-/// The sign-in screen. Full-viewport, centered, no scrolling. On a
-/// successful sign-in this does nothing further — the app's AuthGate
+/// The sign-in screen. Centered when there's room; the form scrolls on its
+/// own if the viewport is too short to fit it (e.g. a small browser window).
+/// On a successful sign-in this does nothing further — the app's AuthGate
 /// swaps to the workspace once [AuthService.user] updates.
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -34,7 +35,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   String _messageFor(Object e) {
     debugPrint('sign-in failed: $e');
-    return 'Sign-in failed. Check your email and password and try again.';
+    return 'That didn\'t work. Check your email and password and try again.';
   }
 
   Future<void> _submitEmail() async {
@@ -81,124 +82,125 @@ class _SignInScreenState extends State<SignInScreen> {
     final busy = _pending != _Pending.none;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: ZLayout.formMaxWidth),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: ZSpace.s24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                FadeSlideIn(
-                  index: 0,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text('Zakerly', style: type.displaySmall),
-                          const SizedBox(width: ZSpace.s12),
-                          Text(
-                            'ذاكرلي',
-                            locale: const Locale('ar'),
-                            style: type.titleLarge?.copyWith(color: z.accent),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: ZSpace.s24,
+                    vertical: ZSpace.s24,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: ZLayout.formMaxWidth),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        FadeSlideIn(
+                          index: 0,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text('Zakerly', style: type.displaySmall),
+                                  const SizedBox(width: ZSpace.s12),
+                                  Text(
+                                    'ذاكرلي',
+                                    locale: const Locale('ar'),
+                                    style: type.titleLarge?.copyWith(color: z.accent),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: ZSpace.s8),
+                              Text(
+                                'Sign in to get back to your courses.',
+                                textAlign: TextAlign.center,
+                                style: type.bodyMedium,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: ZSpace.s24),
+                        AutofillGroup(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              FadeSlideIn(
+                                index: 1,
+                                child: ZTextField(
+                                  controller: _emailController,
+                                  label: 'Email',
+                                  hint: 'Email',
+                                  enabled: !busy,
+                                  autofillHints: const [AutofillHints.email],
+                                  keyboardType: TextInputType.emailAddress,
+                                  textInputAction: TextInputAction.next,
+                                  onSubmitted: (_) => _passwordFocus.requestFocus(),
+                                ),
+                              ),
+                              const SizedBox(height: ZSpace.s12),
+                              FadeSlideIn(
+                                index: 2,
+                                child: ZTextField(
+                                  controller: _passwordController,
+                                  focusNode: _passwordFocus,
+                                  label: 'Password',
+                                  hint: 'Password',
+                                  obscure: true,
+                                  enabled: !busy,
+                                  autofillHints: const [AutofillHints.password],
+                                  textInputAction: TextInputAction.done,
+                                  onSubmitted: (_) => _submitEmail(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: ZSpace.s12),
+                          Semantics(
+                            liveRegion: true,
+                            child: Text(
+                              _error!,
+                              textAlign: TextAlign.center,
+                              style: type.bodySmall?.copyWith(color: z.danger),
+                            ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: ZSpace.s8),
-                      Text(
-                        'Your Canvas courses, a tutor that reads them, '
-                        'and a budget you can always see.',
-                        textAlign: TextAlign.center,
-                        style: type.bodyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: ZSpace.s24),
-                AutofillGroup(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      FadeSlideIn(
-                        index: 1,
-                        child: ZTextField(
-                          controller: _emailController,
-                          label: 'Email',
-                          hint: 'Email',
-                          enabled: !busy,
-                          autofillHints: const [AutofillHints.email],
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          onSubmitted: (_) => _passwordFocus.requestFocus(),
+                        const SizedBox(height: ZSpace.s20),
+                        FadeSlideIn(
+                          index: 3,
+                          child: ZButton(
+                            label: 'Continue',
+                            loading: emailLoading,
+                            onPressed: busy ? null : _submitEmail,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: ZSpace.s12),
-                      FadeSlideIn(
-                        index: 2,
-                        child: ZTextField(
-                          controller: _passwordController,
-                          focusNode: _passwordFocus,
-                          label: 'Password',
-                          hint: 'Password',
-                          obscure: true,
-                          enabled: !busy,
-                          autofillHints: const [AutofillHints.password],
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _submitEmail(),
+                        const SizedBox(height: ZSpace.s12),
+                        FadeSlideIn(
+                          index: 4,
+                          child: ZButton(
+                            label: 'Continue with Google',
+                            variant: ZButtonVariant.tonal,
+                            loading: googleLoading,
+                            onPressed: busy ? null : _submitGoogle,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: ZSpace.s12),
-                  Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: type.bodySmall?.copyWith(color: z.danger),
+                      ],
                     ),
                   ),
-                ],
-                const SizedBox(height: ZSpace.s20),
-                FadeSlideIn(
-                  index: 3,
-                  child: ZButton(
-                    label: 'Continue',
-                    loading: emailLoading,
-                    onPressed: busy ? null : _submitEmail,
-                  ),
                 ),
-                const SizedBox(height: ZSpace.s12),
-                FadeSlideIn(
-                  index: 4,
-                  child: ZButton(
-                    label: 'Continue with Google',
-                    variant: ZButtonVariant.tonal,
-                    loading: googleLoading,
-                    onPressed: busy ? null : _submitGoogle,
-                  ),
-                ),
-                const SizedBox(height: ZSpace.s24),
-                FadeSlideIn(
-                  index: 5,
-                  child: Text(
-                    'Demo build: any email works. Firebase Auth plugs in here.',
-                    textAlign: TextAlign.center,
-                    style: type.bodySmall,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

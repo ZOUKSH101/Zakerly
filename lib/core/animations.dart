@@ -50,8 +50,8 @@ class AnimationService {
     }
     if (!budget.canGenerateAnimation) {
       throw AnimationLimitReached(
-          'You\'ve used today\'s ${budget.plan.animationsPerDay} new animations on ${budget.plan.name}. '
-          'Cached animations are still free.');
+          'You\'ve hit today\'s ${budget.plan.animationsPerDay} new animations on ${budget.plan.name}. '
+          'Cached ones are still free.');
     }
 
     final context = retrieve(concept, course.readyFiles.expand((f) => f.chunks), budgetTokens: 1200);

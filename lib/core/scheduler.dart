@@ -124,7 +124,7 @@ class RequestScheduler extends ChangeNotifier {
       if (runningCount >= policy.maxConcurrent) {
         reason = 'Waiting for a free slot';
       } else if (_starts.length >= policy.requestsPerMinute) {
-        reason = 'Pacing at ${policy.requestsPerMinute} requests / min';
+        reason = 'Pacing at ${policy.requestsPerMinute}/min';
       } else if (background && !offPeak) {
         reason = 'Scheduled for off-peak (${policy.windowLabel})';
       } else if (background && liveWaiting) {

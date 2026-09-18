@@ -79,7 +79,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
               return Semantics(
                 liveRegion: true,
                 excludeSemantics: true,
-                label: 'Drawing your animation. Checking the shared course cache first',
+                label: 'Drawing your animation. Checking the shared cache first',
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -92,7 +92,7 @@ class _AnimationWindowState extends State<_AnimationWindow> {
                       ),
                       const SizedBox(height: ZSpace.s4),
                       Text(
-                        'Checking the shared course cache first',
+                        'Checking the shared cache first',
                         style: context.type.bodySmall?.copyWith(color: z.textTertiary),
                       ),
                     ],

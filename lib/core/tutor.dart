@@ -57,8 +57,8 @@ class TutorService extends ChangeNotifier {
     if (plan.chunks.isEmpty) {
       // Nothing relevant in the selected material: answer locally, spend nothing.
       reply
-        ..text = 'I couldn\'t find this in the material you gave me. '
-            'Try adding more files on the right, or rephrase using terms from your slides.'
+        ..text = 'I couldn\'t find that in your files. '
+            'Try adding more on the right, or use different words from your slides.'
         ..pending = false;
       notifyListeners();
       return;

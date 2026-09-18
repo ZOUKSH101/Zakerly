@@ -9,6 +9,7 @@ import 'mock/mock_auth.dart';
 import 'mock/mock_canvas.dart';
 import 'mock/mock_llm.dart';
 import 'models.dart';
+import 'preferences.dart';
 import 'providers.dart';
 import 'scheduler.dart';
 import 'services.dart';
@@ -57,6 +58,7 @@ class AppServices {
     required this.tutor,
     required this.animations,
     required this.session,
+    required this.preferences,
   });
 
   /// Everything wired to local mocks. Swap each for its Firebase / Canvas /
@@ -94,6 +96,7 @@ class AppServices {
         budget: budget,
       ),
       session: StudySession(),
+      preferences: AppPreferences(),
     );
   }
 
@@ -108,6 +111,7 @@ class AppServices {
   final TutorService tutor;
   final AnimationService animations;
   final StudySession session;
+  final AppPreferences preferences;
 }
 
 /// Makes [AppServices] available to the widget tree: `Services.of(context)`.

@@ -1,11 +1,11 @@
 {
-    "name": "zakerly",
-    "short_name": "zakerly",
+    "name": "Zakerly",
+    "short_name": "Zakerly",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F5F5F7",
+    "theme_color": "#3F5EFB",
+    "description": "Zakerly (ذاكرلي): an AI study tutor that reads your Canvas courses and draws animated explanations.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -148,8 +148,8 @@ class CourseRail extends StatelessWidget {
     if (courses.isEmpty) {
       return const ZEmpty(
         icon: Icons.cloud_sync_outlined,
-        title: 'Connect Canvas',
-        message: 'Sync to pull your courses. No uploads.',
+        title: 'No courses yet',
+        message: 'Tap Sync above to pull them in from Canvas.',
       );
     }
 
@@ -286,7 +286,7 @@ class _CourseTile extends StatelessWidget {
     }
 
     final lockedSuffix = (!course.hasStarted && !canIndex)
-        ? '. Free plan indexes ${s.budget.plan.maxCourses} courses.'
+        ? '. Free plan covers ${s.budget.plan.maxCourses} courses.'
         : '';
     final semanticsLabel =
         '${course.name}, ${course.code}, $statusText$lockedSuffix${selected ? ', selected' : ''}';

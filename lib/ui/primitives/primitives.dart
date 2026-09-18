@@ -12,6 +12,7 @@ export 'eyebrow.dart';
 export 'fade_slide_in.dart';
 export 'glass.dart';
 export 'icon_button.dart';
+export 'logo.dart';
 export 'pressable.dart';
 export 'ring.dart';
 export 'row.dart';

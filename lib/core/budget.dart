@@ -35,7 +35,7 @@ const plans = {
   ),
   PlanTier.pro: Plan(
     name: 'Pro',
-    price: 'Price TBD',
+    price: 'Pricing coming soon',
     monthlyTokens: 3000000,
     maxCourses: 50,
     animationsPerDay: 100,

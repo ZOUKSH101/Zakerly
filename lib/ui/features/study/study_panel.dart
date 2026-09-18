@@ -292,9 +292,8 @@ class _StudyPanelState extends State<StudyPanel> {
     if (courses.isEmpty) {
       return const ZEmpty(
         icon: Icons.school_outlined,
-        title: 'Sync your Canvas courses',
-        message:
-            'Use Sync in the left rail. Zakerly pulls slides, readings and deadlines for you.',
+        title: 'Sync your courses to start',
+        message: 'Hit Sync on the left — we\'ll pull in your slides and readings.',
       );
     }
 
@@ -317,7 +316,7 @@ class _StudyPanelState extends State<StudyPanel> {
       );
     }
     if (course.hasPendingWork) {
-      message = 'Files are in the queue. Heavy indexing runs off-peak; see Status.';
+      message = 'Big files finish overnight to save your budget. Check Status for progress.';
     }
 
     return ZEmpty(
@@ -517,7 +516,7 @@ class _StudyPanelState extends State<StudyPanel> {
         children: [
           TextSpan(
             text: '${formatTokens(msg.tokens)} tokens · '
-                'pasting the files: ${formatTokens(msg.naiveTokens)} · ',
+                'full files: ${formatTokens(msg.naiveTokens)} · ',
           ),
           TextSpan(
             text: '$saved% saved',
@@ -541,16 +540,15 @@ class _StudyPanelState extends State<StudyPanel> {
     String caption;
     Color captionColor = z.textSecondary;
     if (text.trim().isEmpty) {
-      caption = '${included.length} files in context. Change them in Status.';
+      caption = 'Using ${included.length} files. Change them in Status.';
     } else {
       final plan = s.tutor.plan(course, included, text, s.session.mode);
       if (plan.chunks.isEmpty) {
-        caption = 'Nothing in your selected files matches. No tokens will be spent.';
+        caption = 'Nothing in your files matches that — you won\'t spend any tokens.';
         captionColor = z.warning;
       } else {
-        caption = 'Will send ${plan.chunks.length} sections · '
-            '~${formatTokens(plan.promptTokens)} tokens '
-            '(pasting the files: ${formatTokens(plan.naiveTokens)})';
+        caption = '~${formatTokens(plan.promptTokens)} tokens from ${plan.chunks.length} sections '
+            '· full files would be ${formatTokens(plan.naiveTokens)}';
       }
     }
 
