@@ -1,4 +1,4 @@
-﻿name: zakerly
+name: zakerly
 description: "Zakerly â€” a GenAI study workspace connected to your LMS."
 publish_to: 'none'
 version: 0.1.0+1
@@ -20,3 +20,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Brand typeface (docs/brand/BRAND.md s.4). Single variable file (wght
+  # 160..700, Latin + Arabic), OFL: assets/fonts/OFL.txt. Weights are driven
+  # through the wght axis via ZType.weightAxis.
+  fonts:
+    - family: Readex Pro
+      fonts:
+        - asset: assets/fonts/ReadexPro-Variable.ttf

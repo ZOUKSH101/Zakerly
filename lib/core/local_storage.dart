@@ -1,0 +1,2 @@
+// Browser localStorage on web, an in-memory map elsewhere (VM tests).
+export 'local_storage_stub.dart' if (dart.library.js_interop) 'local_storage_web.dart';

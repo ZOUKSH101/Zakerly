@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
@@ -50,7 +50,7 @@ class SchedulerPolicy {
   }
 
   String get windowLabel =>
-      '${_hh(offPeakStartHour)}–${_hh(offPeakEndHour)}';
+      '${_hh(offPeakStartHour)}â€“${_hh(offPeakEndHour)}';
 
   static String _hh(int h) => '${h.toString().padLeft(2, '0')}:00';
 }
@@ -59,15 +59,13 @@ class SchedulerPolicy {
 /// first; indexing waits for off-peak hours and never exceeds the request
 /// rate, so the provider's limits are respected on our side.
 class RequestScheduler extends ChangeNotifier {
-  RequestScheduler({required this.budget}) {
-    _timer = Timer.periodic(const Duration(milliseconds: 400), (_) => _pump());
-  }
+  RequestScheduler({required this.budget});
 
   final BudgetController budget;
   final policy = SchedulerPolicy();
   final List<Job> _jobs = [];
   final List<DateTime> _starts = [];
-  late final Timer _timer;
+  Timer? _timer; // Ticks only while jobs are waiting.
   int _seq = 0;
 
   List<Job> get jobs => List.unmodifiable(_jobs);
@@ -155,6 +153,14 @@ class RequestScheduler extends ChangeNotifier {
       }
     }
     if (changed) notifyListeners();
+
+    final anyWaiting = _jobs.any((j) => j.state == JobState.queued || j.state == JobState.waiting);
+    if (anyWaiting) {
+      _timer ??= Timer.periodic(const Duration(milliseconds: 400), (_) => _pump());
+    } else {
+      _timer?.cancel();
+      _timer = null;
+    }
   }
 
   void _start(Job job) {
@@ -182,7 +188,7 @@ class RequestScheduler extends ChangeNotifier {
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../animations.dart';
 import '../services.dart';
 import '../util.dart';
 import 'mock_animations.dart';
@@ -67,14 +68,13 @@ class MockLlm implements LlmProvider {
   String _animation(String prompt) {
     final concept = RegExp(r'CONCEPT: (.*)').firstMatch(prompt)?[1]?.trim() ?? 'Concept';
     final sources = _sources(prompt);
-    final key = conceptKey('$concept ${sources.map((s) => s.heading).join(' ')}');
-    if (key.contains('tree') || key.contains('bst')) return bstAnimation(concept);
-    if (key.contains('interest') || key.contains('compound') || key.contains('value')) {
-      return growthAnimation(concept);
-    }
-    return keyPointsAnimation(concept, [
-      for (final s in sources) (s.heading, _sentences(s.text).first),
-    ]);
+    return switch (matchAnimationTemplate(concept)) {
+      AnimationTemplate.tree => bstAnimation(concept),
+      AnimationTemplate.growth => growthAnimation(concept),
+      AnimationTemplate.keyIdeas => keyPointsAnimation(concept, [
+          for (final s in sources) (s.heading, _sentences(s.text).first),
+        ]),
+    };
   }
 
   List<({String file, String heading, String text})> _sources(String prompt) => [

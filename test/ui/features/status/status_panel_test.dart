@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:zakerly/core/app_services.dart';
@@ -65,7 +65,7 @@ void main() {
 
     expect(find.text('Syllabus.pdf'), findsOneWidget);
     expect(find.text('Lecture 3.pdf'), findsOneWidget);
-    // The old verbose subtitle ("14.2k · Queued"/"Indexed") is gone.
+    // The old verbose subtitle ("14.2k Â· Queued"/"Indexed") is gone.
     expect(find.textContaining('Queued'), findsNothing);
     expect(find.textContaining('Indexed'), findsNothing);
     expect(find.textContaining('14.2k'), findsNothing);
@@ -93,7 +93,6 @@ void main() {
     tester,
   ) async {
     final s = AppServices.demo();
-    addTearDown(s.scheduler.dispose);
     // Deterministic "waiting" state, independent of the real wall clock.
     s.scheduler.policy.maxConcurrent = 0;
 
@@ -118,5 +117,9 @@ void main() {
 
     expect(job.lane, JobLane.interactive);
     expect(find.text('Process now'), findsNothing);
+
+    // The job never gets a slot (maxConcurrent = 0), so stop the pacing
+    // timer before the binding checks for pending timers.
+    s.scheduler.dispose();
   });
 }

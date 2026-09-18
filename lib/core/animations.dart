@@ -27,6 +27,29 @@ class AnimationLimitReached implements Exception {
   String toString() => message;
 }
 
+/// The set of canned animation shapes the mock (and, by contract, the real
+/// model) can produce. See [matchAnimationTemplate].
+enum AnimationTemplate { tree, growth, keyIdeas }
+
+/// Chooses a template from the concept text alone. Deliberately ignores the
+/// retrieved course chunk headings: a course about trees can have a "tree"
+/// heading pulled in for an unrelated concept (e.g. "Summarize the key
+/// ideas"), which previously misrouted plain summaries into the BST
+/// animation. The BST template is reserved for concepts that are actually
+/// about trees or binary search trees; a finance concept gets the growth
+/// template; anything else - including "summarize"/"key ideas" style asks
+/// and unknown concepts - falls back to the generic key-ideas template.
+AnimationTemplate matchAnimationTemplate(String concept) {
+  final terms = contentTerms(concept).toSet();
+  bool any(Iterable<String> words) => words.any(terms.contains);
+
+  if (any(const ['tree', 'bst', 'binary'])) return AnimationTemplate.tree;
+  if (any(const ['interest', 'compound', 'invest', 'finance', 'principal', 'apr'])) {
+    return AnimationTemplate.growth;
+  }
+  return AnimationTemplate.keyIdeas;
+}
+
 /// Asks the model to draw an HTML animation of a concept. Results are cached
 /// per course + normalised concept, so the whole class shares one generation.
 class AnimationService {

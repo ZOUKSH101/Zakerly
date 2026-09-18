@@ -55,11 +55,23 @@ class Prompts {
   static const animationSystem =
       'You create short educational animations as ONE self-contained HTML document. '
       'Output only the document, starting with <!doctype html>. '
-      'Inline all CSS and JavaScript; no external URLs, fonts, images or network requests. '
-      'Fill a 16:9 frame and scale to the container. Loop automatically every 6-12 seconds. '
-      'Dark background, high-contrast labels, at most six words per label. '
-      'Respect prefers-reduced-motion by showing a static final frame. '
-      'Every label must come from the provided course context. Keep it under 30KB.';
+      'Inline all CSS and JavaScript inside the document. Do not reference any external '
+      'URL, font, image, script or stylesheet, and make no network requests. '
+      'Fill the whole frame responsively: html and body at 100% width and height; if you use '
+      'an SVG, give it a viewBox, width and height at 100%, and preserveAspectRatio; size all '
+      'text with clamp() or vmin units, never a fixed pixel size that stays small in a big frame. '
+      'Break the explanation into a sequence of steps. Provide visible controls: a Back button, '
+      'a Play/Pause button, a Next button, and a step counter reading "Step X of Y". Show one '
+      'short caption per step describing what just happened. Wire the left and right arrow keys '
+      'to Back and Next, and Space to Play/Pause. Wait for the student to press Next by default; '
+      'only advance automatically while Play is active. '
+      'Respect prefers-reduced-motion by removing transitions and jumping straight to each step, '
+      'still under the student\'s step control. '
+      'Support both light and dark mode with a prefers-color-scheme media query. Use #4C63F5 as '
+      'the accent color and a plain system font stack. '
+      'Keep the writing calm and plain: short sentences, no buzzwords, and never use an em dash '
+      'or en dash character. Every fact and label must come from the provided course context. '
+      'Keep the whole document under 30KB.';
 
   static String animation(String concept, List<Chunk> context) {
     final b = StringBuffer('CONCEPT: $concept\n<<CONTEXT>>\n');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:web/web.dart' as web;
+
+import 'local_storage.dart';
 
 enum AppLanguage {
   english('en', 'English'),
@@ -47,17 +48,7 @@ class AppPreferences extends ChangeNotifier {
     notifyListeners();
   }
 
-  static String? _read(String key) {
-    try {
-      return web.window.localStorage.getItem(key);
-    } catch (_) {
-      return null; // Storage blocked (private mode etc.) — use defaults.
-    }
-  }
+  static String? _read(String key) => readLocal(key);
 
-  static void _write(String key, String value) {
-    try {
-      web.window.localStorage.setItem(key, value);
-    } catch (_) {}
-  }
+  static void _write(String key, String value) => writeLocal(key, value);
 }
