@@ -1,0 +1,95 @@
+import 'dart:math';
+
+import '../services.dart';
+import '../util.dart';
+import 'mock_animations.dart';
+
+/// Stand-in for Gemini. Parses the same prompt markers the real model sees
+/// and answers only from the supplied context, so grounding and citations
+/// behave like production.
+class MockLlm implements LlmProvider {
+  final _rng = Random();
+
+  @override
+  Future<LlmResponse> generate(LlmRequest r) async {
+    await Future<void>.delayed(Duration(milliseconds: 700 + _rng.nextInt(900)));
+    final text = switch (r.purpose) {
+      LlmPurpose.summarize => _summarize(r.prompt),
+      LlmPurpose.tutor => _tutor(r.system, r.prompt),
+      LlmPurpose.animation => _animation(r.prompt),
+    };
+    return LlmResponse(
+      text: text,
+      inputTokens: estimateTokens(r.system) + estimateTokens(r.prompt),
+      outputTokens: estimateTokens(text),
+    );
+  }
+
+  String _summarize(String prompt) {
+    final lines = <String>[];
+    for (final m in RegExp(r'^## (.+)\n(.+)$', multiLine: true).allMatches(prompt)) {
+      lines.add('- ${m[1]!.trim()}: ${_sentences(m[2]!).first}');
+    }
+    return lines.join('\n');
+  }
+
+  String _tutor(String system, String prompt) {
+    final sources = _sources(prompt);
+    final question = RegExp(r'QUESTION: (.*)$', dotAll: true).firstMatch(prompt)?[1]?.trim() ?? '';
+    final first = sources.first;
+    final s1 = _sentences(first.text);
+
+    if (system.contains('MODE: SOCRATIC')) {
+      return 'Let\'s work it out rather than me just telling you.\n\n'
+          'Your notes on ${first.heading} say: "${s1.first}" [${first.file} · ${first.heading}]\n\n'
+          'Using that rule, what do you think happens in the case you asked about ("$question"), and why? '
+          'Reply with your reasoning and I\'ll check it.';
+    }
+    if (system.contains('MODE: QUIZ')) {
+      final second = sources.length > 1 ? sources[1] : first;
+      return 'Three quick checks from your material:\n\n'
+          '1. True or false: ${s1.first}\n'
+          '2. In your own words, explain ${first.heading.toLowerCase()}.\n'
+          '3. What is the key idea of "${second.heading}"?\n\n'
+          'Answer in the chat and I\'ll mark them. [${first.file} · ${first.heading}]';
+    }
+
+    final b = StringBuffer('${s1.take(2).join(' ')} [${first.file} · ${first.heading}]');
+    if (s1.length > 2) b.write('\n\n${s1.skip(2).join(' ')}');
+    if (sources.length > 1) {
+      final other = sources[1];
+      b.write('\n\nRelated: ${_sentences(other.text).first} [${other.file} · ${other.heading}]');
+    }
+    b.write('\n\nWant to see it? Tap Visualize.');
+    return b.toString();
+  }
+
+  String _animation(String prompt) {
+    final concept = RegExp(r'CONCEPT: (.*)').firstMatch(prompt)?[1]?.trim() ?? 'Concept';
+    final sources = _sources(prompt);
+    final key = conceptKey('$concept ${sources.map((s) => s.heading).join(' ')}');
+    if (key.contains('tree') || key.contains('bst')) return bstAnimation(concept);
+    if (key.contains('interest') || key.contains('compound') || key.contains('value')) {
+      return growthAnimation(concept);
+    }
+    return keyPointsAnimation(concept, [
+      for (final s in sources) (s.heading, _sentences(s.text).first),
+    ]);
+  }
+
+  List<({String file, String heading, String text})> _sources(String prompt) => [
+        for (final m in RegExp(
+          r'\[\[source: (.+?) \| (.+?)\]\]\n([\s\S]*?)(?=\n\[\[source:|\n?<<END CONTEXT>>)',
+        ).allMatches(prompt))
+          (file: m[1]!, heading: m[2]!, text: m[3]!.trim()),
+      ];
+
+  List<String> _sentences(String text) {
+    final parts = text
+        .split(RegExp(r'(?<=[.!?])\s+'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    return parts.isEmpty ? [text] : parts;
+  }
+}

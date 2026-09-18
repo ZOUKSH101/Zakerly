@@ -1,0 +1,128 @@
+{
+  "lib/core/animations.dart": {
+    "mtime": 1789706551.9928,
+    "seen": 1789707246.5671842,
+    "ast_hash": "824b27394d219ced64789635e8819967",
+    "semantic_hash": "824b27394d219ced64789635e8819967"
+  },
+  "lib/core/app_services.dart": {
+    "mtime": 1789706690.6646142,
+    "seen": 1789707246.5671878,
+    "ast_hash": "b561ff1d5898ad65b7c54e4d47900f12",
+    "semantic_hash": "b561ff1d5898ad65b7c54e4d47900f12"
+  },
+  "lib/core/budget.dart": {
+    "mtime": 1789706493.8173065,
+    "seen": 1789707246.567189,
+    "ast_hash": "e7572f80abba0d1366c7fedfc7298177",
+    "semantic_hash": "e7572f80abba0d1366c7fedfc7298177"
+  },
+  "lib/core/cache.dart": {
+    "mtime": 1789706520.235401,
+    "seen": 1789707246.5671897,
+    "ast_hash": "64d950eb1698543fc486ec76ce720e84",
+    "semantic_hash": "64d950eb1698543fc486ec76ce720e84"
+  },
+  "lib/core/courses.dart": {
+    "mtime": 1789706524.1995714,
+    "seen": 1789707246.5671906,
+    "ast_hash": "87595bbf967012ee7b150d2e0dad034c",
+    "semantic_hash": "87595bbf967012ee7b150d2e0dad034c"
+  },
+  "lib/core/ingestion.dart": {
+    "mtime": 1789706533.4786773,
+    "seen": 1789707246.5671914,
+    "ast_hash": "e564b1c1e426651e3dfca7f9bde69471",
+    "semantic_hash": "e564b1c1e426651e3dfca7f9bde69471"
+  },
+  "lib/core/mock/mock_animations.dart": {
+    "mtime": 1789706672.1503894,
+    "seen": 1789707246.5671918,
+    "ast_hash": "cf253bf5b1f04e352369af29e8892f3d",
+    "semantic_hash": "cf253bf5b1f04e352369af29e8892f3d"
+  },
+  "lib/core/mock/mock_auth.dart": {
+    "mtime": 1789706563.7319613,
+    "seen": 1789707246.5671923,
+    "ast_hash": "31c4936efd7757eb9b6af6ace227c52b",
+    "semantic_hash": "31c4936efd7757eb9b6af6ace227c52b"
+  },
+  "lib/core/mock/mock_canvas.dart": {
+    "mtime": 1789706619.1304746,
+    "seen": 1789707246.567193,
+    "ast_hash": "89806506976c31956e8427090e9f2037",
+    "semantic_hash": "89806506976c31956e8427090e9f2037"
+  },
+  "lib/core/mock/mock_llm.dart": {
+    "mtime": 1789706640.8539894,
+    "seen": 1789707246.5671935,
+    "ast_hash": "2331e2acaba34e15c4654a810097caa9",
+    "semantic_hash": "2331e2acaba34e15c4654a810097caa9"
+  },
+  "lib/core/models.dart": {
+    "mtime": 1789706463.4905207,
+    "seen": 1789707246.5671945,
+    "ast_hash": "712866c7778612158f311c7a8fb14f56",
+    "semantic_hash": "712866c7778612158f311c7a8fb14f56"
+  },
+  "lib/core/prompts.dart": {
+    "mtime": 1789706478.9081523,
+    "seen": 1789707246.567195,
+    "ast_hash": "e12e58aaf6d0938c130dae4bfd7dcfab",
+    "semantic_hash": "e12e58aaf6d0938c130dae4bfd7dcfab"
+  },
+  "lib/core/providers.dart": {
+    "mtime": 1789706516.0592105,
+    "seen": 1789707246.5671954,
+    "ast_hash": "d910536aa37483858759f6b77d2518bd",
+    "semantic_hash": "d910536aa37483858759f6b77d2518bd"
+  },
+  "lib/core/retrieval.dart": {
+    "mtime": 1789706484.035478,
+    "seen": 1789707246.5671961,
+    "ast_hash": "aefb3f4e277519548717f06edbb92aaf",
+    "semantic_hash": "aefb3f4e277519548717f06edbb92aaf"
+  },
+  "lib/core/scheduler.dart": {
+    "mtime": 1789706509.6111684,
+    "seen": 1789707246.5671966,
+    "ast_hash": "f18f443300fd17b2c666c855c99d5b1b",
+    "semantic_hash": "f18f443300fd17b2c666c855c99d5b1b"
+  },
+  "lib/core/services.dart": {
+    "mtime": 1789706469.3860228,
+    "seen": 1789707246.5671973,
+    "ast_hash": "f44be76ca0eb7dd7dd7018f05767e548",
+    "semantic_hash": "f44be76ca0eb7dd7dd7018f05767e548"
+  },
+  "lib/core/tutor.dart": {
+    "mtime": 1789706543.3817296,
+    "seen": 1789707246.567198,
+    "ast_hash": "9fb8681173a52f80c3e447d919c43d7b",
+    "semantic_hash": "9fb8681173a52f80c3e447d919c43d7b"
+  },
+  "lib/core/util.dart": {
+    "mtime": 1789706456.2386243,
+    "seen": 1789707246.5671988,
+    "ast_hash": "19f2c436fa553720dd8b00ee258766c6",
+    "semantic_hash": "19f2c436fa553720dd8b00ee258766c6"
+  },
+  "lib/main.dart": {
+    "mtime": 1789706766.196425,
+    "seen": 1789707246.5671992,
+    "ast_hash": "289743ab460526020275e5a913b5dd28",
+    "semantic_hash": "289743ab460526020275e5a913b5dd28"
+  },
+  "CONTRACT.md": {
+    "mtime": 1789706762.6035085,
+    "seen": 1789707246.5671997,
+    "ast_hash": "698a18150bcfa641bf1daf0f6ada7f97",
+    "semantic_hash": "698a18150bcfa641bf1daf0f6ada7f97"
+  },
+  "pubspec.yaml": {
+    "mtime": 1789706764.359691,
+    "seen": 1789707246.5672004,
+    "ast_hash": "f7019b534d75d198a3045373b2633476",
+    "semantic_hash": "f7019b534d75d198a3045373b2633476"
+  }
+}
