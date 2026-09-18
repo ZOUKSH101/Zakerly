@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:zakerly/core/app_services.dart';
+import 'package:zakerly/core/models.dart';
 import 'package:zakerly/ui/features/settings/settings_dialog.dart';
 import 'package:zakerly/ui/features/sign_in/sign_in_screen.dart';
 import 'package:zakerly/ui/theme.dart';
@@ -87,11 +88,61 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    for (final section in ['Plan', 'Model keys', 'Account', 'General']) {
-      await tester.tap(find.text(section).first);
+
+    // Too narrow for four labels: the tabs are icons, all on screen, each
+    // named by its tooltip.
+    final screen = tester.getRect(find.byType(MaterialApp));
+    for (final section in ['General', 'Plan', 'Model keys', 'Account']) {
+      final tab = find.byTooltip(section);
+      expect(tab, findsOneWidget, reason: section);
+      expect(screen.contains(tester.getCenter(tab)), isTrue, reason: '$section tab is on screen');
+    }
+
+    const panes = {
+      'Plan': 'Switch to Pro',
+      'Model keys': 'Google Gemini',
+      'Account': 'Sign out',
+      'General': 'Appearance',
+    };
+    for (final MapEntry(key: section, value: marker) in panes.entries) {
+      await tester.tap(find.byTooltip(section));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: section);
+      // The tab really switched: the pane's heading and content are shown.
+      expect(find.text(section), findsOneWidget, reason: '$section heading');
+      expect(find.text(marker), findsOneWidget, reason: '$section content');
     }
+  });
+
+  testWidgets('signing out forgets own keys, the own-key switch and chat threads', (tester) async {
+    await setSize(tester, const Size(1440, 900));
+    final s = AppServices.demo();
+    addTearDown(s.scheduler.dispose);
+    s.providers.saveKey('gemini', 'sk-test-1234');
+    s.budget.setUseOwnKey(true);
+    s.tutor.thread('c1').add(ChatMessage(author: Author.student, text: 'hi'));
+
+    await tester.pumpWidget(_app(
+      s,
+      Builder(
+        builder: (context) => Scaffold(
+          body: TextButton(
+            onPressed: () => showSettingsDialog(context),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Account').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sign out'));
+    await tester.pumpAndSettle();
+
+    expect(s.providers.hasKey('gemini'), isFalse);
+    expect(s.budget.useOwnKey, isFalse);
+    expect(s.tutor.thread('c1'), isEmpty);
   });
 
   for (final size in const [Size(1440, 900), Size(390, 844)]) {

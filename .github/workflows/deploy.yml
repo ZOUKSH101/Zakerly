@@ -29,16 +29,24 @@ jobs:
       - run: flutter analyze
 
       # Firebase web config is public by design (it ships in the bundle);
-      # it lives in secrets only to keep it out of the repo.
+      # it lives in secrets only to keep it out of the repo. lib/core/env.dart
+      # reads these; until the Firebase adapters land, the app runs on mocks.
       - name: Build web
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
         run: >
           flutter build web --release
-          --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}
-          --dart-define=FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }}
-          --dart-define=FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}
-          --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
-          --dart-define=FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }}
-          --dart-define=FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          --dart-define=FIREBASE_API_KEY="$FIREBASE_API_KEY"
+          --dart-define=FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN"
+          --dart-define=FIREBASE_DATABASE_URL="$FIREBASE_DATABASE_URL"
+          --dart-define=FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID"
+          --dart-define=FIREBASE_APP_ID="$FIREBASE_APP_ID"
+          --dart-define=FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID"
 
       - name: Create Pages project (first run only)
         env:
@@ -47,9 +55,10 @@ jobs:
         run: npx --yes wrangler@3 pages project create zakerly --production-branch main || true
 
       # The Gemini key is server-side only: it goes to the Pages project as an
-      # encrypted secret for the request proxy, never into the Flutter bundle.
+      # encrypted secret for the request proxy (functions/), never into the
+      # Flutter bundle. Skipped until that proxy exists.
       - name: Sync server secrets
-        if: env.HAS_GEMINI == 'true'
+        if: env.HAS_GEMINI == 'true' && hashFiles('functions/**') != ''
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

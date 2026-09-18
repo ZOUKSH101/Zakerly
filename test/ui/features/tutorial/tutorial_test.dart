@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:zakerly/l10n/strings.dart';
 import 'package:zakerly/ui/features/tutorial/tutorial.dart';
 import 'package:zakerly/ui/features/tutorial/tutorial_copy.dart';
 import 'package:zakerly/ui/features/tutorial/tutorial_targets.dart';
@@ -124,6 +125,64 @@ void main() {
     await tester.tapAt(const Offset(5, 5));
     await tester.pumpAndSettle();
     expect(find.text(tutorialSteps[1].title), findsOneWidget);
+  });
+
+  testWidgets('arrow keys still work after clicking Next', (tester) async {
+    await tester.pumpWidget(_harness());
+    await tester.tap(find.text('replay'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text(tutorialSteps[1].title), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(find.text(tutorialSteps[0].title), findsOneWidget);
+  });
+
+  testWidgets('skips targets in a hidden IndexedStack child and uses the budget pill fallback',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildTheme(Brightness.light),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Column(
+              children: [
+                ElevatedButton(
+                  onPressed: () => showTutorial(context),
+                  child: const Text('replay'),
+                ),
+                Container(key: TutorialTargets.sync, width: 40, height: 40, color: Colors.blue),
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: IndexedStack(
+                    index: 0,
+                    children: [
+                      const ColoredBox(color: Colors.green),
+                      // Laid out, sized, but never visible.
+                      Container(key: TutorialTargets.courses, color: Colors.red),
+                    ],
+                  ),
+                ),
+                Container(key: TutorialTargets.budgetPill, width: 40, height: 40, color: Colors.amber),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('replay'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(tutorialSteps[0].title), findsOneWidget);
+    expect(find.text('Step 1 of 2'), findsOneWidget);
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text(tutorialSteps[1].title), findsNothing);
+    expect(find.text(S.en.tutorialBudgetTitle), findsOneWidget);
   });
 
   testWidgets('a tutorial with no mounted targets is a no-op', (tester) async {

@@ -119,6 +119,53 @@ class _ZSparkState extends State<ZSpark> with SingleTickerProviderStateMixin {
   }
 }
 
+/// The brand spark at rest, as a small static glyph: the amber pen-lift dot
+/// with four short rays. Use it where an icon would go for delight moments
+/// (e.g. the "already drawn for your class" cache badge). Decorative.
+class ZSparkGlyph extends StatelessWidget {
+  const ZSparkGlyph({super.key, this.size = 12, this.color});
+
+  final double size;
+
+  /// Defaults to `z.spark`.
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: CustomPaint(
+        size: Size.square(size),
+        painter: _SparkGlyphPainter(color ?? context.z.spark),
+      ),
+    );
+  }
+}
+
+class _SparkGlyphPainter extends CustomPainter {
+  _SparkGlyphPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = size.center(Offset.zero);
+    final s = size.shortestSide;
+    canvas.drawCircle(c, s * 0.2, Paint()..color = color);
+    final ray = Paint()
+      ..color = color
+      ..strokeWidth = math.max(1.2, s * 0.12)
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < 4; i++) {
+      final a = -math.pi / 2 + i * math.pi / 2;
+      final d = Offset(math.cos(a), math.sin(a));
+      canvas.drawLine(c + d * (s * 0.34), c + d * (s * 0.46), ray);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparkGlyphPainter old) => old.color != color;
+}
+
 class _SparkPainter extends CustomPainter {
   _SparkPainter({
     required this.t,

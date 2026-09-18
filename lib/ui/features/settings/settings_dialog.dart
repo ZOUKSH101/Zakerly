@@ -25,8 +25,12 @@ Future<void> showSettingsDialog(BuildContext context) {
     context,
     builder: (context) {
       final vp = MediaQuery.sizeOf(context);
-      final width = math.min(900.0, vp.width - 2 * ZSpace.s16).clamp(0.0, double.infinity);
-      final height = math.min(600.0, vp.height - 2 * ZSpace.s16).clamp(0.0, double.infinity);
+      final width = math
+          .min(ZLayout.settingsMaxWidth, vp.width - 2 * ZSpace.s16)
+          .clamp(0.0, double.infinity);
+      final height = math
+          .min(ZLayout.settingsMaxHeight, vp.height - 2 * ZSpace.s16)
+          .clamp(0.0, double.infinity);
       final t = S.of(context);
       return Semantics(
         scopesRoute: true,
@@ -101,6 +105,18 @@ class _SettingsBodyState extends State<_SettingsBody> {
     setState(() => _addingId = null);
   }
 
+  /// Signing out forgets everything personal held in memory on this device:
+  /// the student's own model keys, the "use my own key" switch and the chat
+  /// threads, so the next person here starts clean.
+  void _signOut(AppServices s) {
+    for (final p in providerCatalog) {
+      if (s.providers.hasKey(p.id)) s.providers.removeKey(p.id);
+    }
+    s.budget.setUseOwnKey(false);
+    s.tutor.clearThreads();
+    s.auth.signOut();
+  }
+
   void _replayTutorial() {
     final host = widget.host;
     Navigator.of(context).pop();
@@ -121,6 +137,10 @@ class _SettingsBodyState extends State<_SettingsBody> {
           builder: (context, constraints) {
             final content = _content(context, s);
             if (constraints.maxWidth < _twoPaneWidth) {
+              // On a phone all four labels don't fit, and a tab scrolled
+              // off-screen gives no hint it exists: show icons only (the
+              // name is in the tooltip, semantics and the pane's heading).
+              final iconOnly = constraints.maxWidth < ZLayout.iconOnlyTabsWidth;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -133,6 +153,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
                             section: section,
                             selected: section == _section,
                             compact: true,
+                            iconOnly: iconOnly,
                             onTap: () => setState(() => _section = section),
                           ),
                           const SizedBox(width: ZSpace.s4),
@@ -198,7 +219,10 @@ class _SettingsBodyState extends State<_SettingsBody> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_section.label(S.of(context)), style: context.type.titleLarge),
+              Semantics(
+                header: true,
+                child: Text(_section.label(S.of(context)), style: context.type.titleLarge),
+              ),
               const SizedBox(height: ZSpace.s20),
               pane,
             ],
@@ -225,7 +249,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
       children: [
         _label(context, t.appearance),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
+          constraints: const BoxConstraints(maxWidth: ZLayout.settingsControlMaxWidth),
           child: ZSegmented<ThemeMode>(
             segments: [
               (ThemeMode.system, t.themeSystem),
@@ -239,7 +263,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         const SizedBox(height: ZSpace.s24),
         _label(context, t.language),
         ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
+          constraints: const BoxConstraints(maxWidth: ZLayout.settingsControlMaxWidth),
           child: ZSegmented<AppLanguage>(
             // Each language is always named in its own script.
             segments: [
@@ -285,7 +309,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
   Widget _planPane(BuildContext context, AppServices s) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final sideBySide = constraints.maxWidth >= 480;
+        final sideBySide = constraints.maxWidth >= ZLayout.planSideBySideWidth;
         final free = _planCard(context, s, PlanTier.free, fill: sideBySide);
         final pro = _planCard(context, s, PlanTier.pro, fill: sideBySide);
         final cards = !sideBySide
@@ -336,7 +360,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
               if (isCurrent) ZBadge(label: t.current, tone: ZBadgeTone.accent),
             ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: ZLayout.nudge),
           Text(t.planPrice(tier), style: context.type.bodySmall),
           const SizedBox(height: ZSpace.s12),
           for (final perk in t.planPerks(tier))
@@ -346,7 +370,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 2),
+                    padding: const EdgeInsets.only(top: ZLayout.nudge),
                     child: Icon(Icons.check_rounded, size: ZIcon.sm, color: z.success),
                   ),
                   const SizedBox(width: ZSpace.s8),
@@ -542,20 +566,13 @@ class _SettingsBodyState extends State<_SettingsBody> {
     final user = s.auth.user.value;
     final cache = s.cache;
     final name = user?.name ?? t.guest;
-    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(color: z.accentSoft, shape: BoxShape.circle),
-              alignment: Alignment.center,
-              child: Text(initial, style: context.type.titleMedium?.copyWith(color: z.accentText)),
-            ),
+            ZAvatar(name: name, size: ZLayout.avatarLg),
             const SizedBox(width: ZSpace.s12),
             Expanded(
               child: Column(
@@ -575,7 +592,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
               size: ZButtonSize.sm,
               onPressed: () {
                 Navigator.of(context).pop();
-                s.auth.signOut();
+                _signOut(s);
               },
             ),
           ],
@@ -638,6 +655,7 @@ class _NavItem extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.compact = false,
+    this.iconOnly = false,
   });
 
   final _Section section;
@@ -645,12 +663,15 @@ class _NavItem extends StatelessWidget {
   final VoidCallback onTap;
   final bool compact;
 
+  /// Just the icon (phones); the name moves to a tooltip.
+  final bool iconOnly;
+
   @override
   Widget build(BuildContext context) {
     final z = context.z;
     final label = section.label(S.of(context));
     final fg = selected ? z.accentText : z.text;
-    return Semantics(
+    Widget item = Semantics(
       selected: selected,
       child: Pressable(
         onTap: onTap,
@@ -658,7 +679,7 @@ class _NavItem extends StatelessWidget {
         child: AnimatedContainer(
           duration: ZMotion.medium,
           curve: ZMotion.standard,
-          height: 40,
+          height: ZLayout.navItemHeight,
           padding: const EdgeInsets.symmetric(horizontal: ZSpace.s12),
           decoration: BoxDecoration(
             color: selected ? z.accentSoft : Colors.transparent,
@@ -668,18 +689,22 @@ class _NavItem extends StatelessWidget {
             mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
             children: [
               Icon(section.icon, size: ZIcon.md, color: selected ? z.accentText : z.textSecondary),
-              const SizedBox(width: ZSpace.s12),
-              Text(
-                label,
-                style: (selected
-                        ? ZType.withWeight(context.type.bodyLarge!, FontWeight.w500)
-                        : context.type.bodyLarge)
-                    ?.copyWith(color: fg),
-              ),
+              if (!iconOnly) ...[
+                const SizedBox(width: ZSpace.s12),
+                Text(
+                  label,
+                  style: (selected
+                          ? ZType.withWeight(context.type.bodyLarge!, FontWeight.w500)
+                          : context.type.bodyLarge)
+                      ?.copyWith(color: fg),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+    if (iconOnly) item = Tooltip(message: label, excludeFromSemantics: true, child: item);
+    return item;
   }
 }

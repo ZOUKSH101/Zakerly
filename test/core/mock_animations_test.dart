@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:zakerly/core/animations.dart';
 import 'package:zakerly/core/mock/mock_animations.dart';
+import 'package:zakerly/core/preferences.dart';
+import 'package:zakerly/core/prompts.dart';
 
 void main() {
   group('matchAnimationTemplate', () {
@@ -37,13 +39,14 @@ void main() {
         caseSensitive: false,
       );
       expect(html, isNot(matches(external)), reason: 'must not reference any external URL');
-      expect(html, contains('prefers-color-scheme'));
+      // Colours come from the app theme, not the OS setting.
+      expect(html, isNot(contains('prefers-color-scheme')));
       expect(html, contains('prefers-reduced-motion'));
-      expect(html, contains('#C2255C'));
       expect(html, contains('id="back"'));
       expect(html, contains('id="play"'));
       expect(html, contains('id="next"'));
-      expect(html, contains("'Step '"));
+      expect(html, contains(AnimationMessages.next));
+      expect(html, contains(AnimationMessages.escape));
       expect(html, contains('ArrowRight'));
       expect(html, contains('ArrowLeft'));
       expect(html, contains('html,body{margin:0;width:100%;height:100%'));
@@ -53,7 +56,28 @@ void main() {
     }
 
     test('bstAnimation follows the shared contract', () {
-      checkContract(bstAnimation('Binary search trees'));
+      final html = bstAnimation('Binary search trees');
+      checkContract(html);
+      expect(html, contains('<html lang="en" dir="ltr">'));
+      expect(html, contains('Step {i} of {n}'));
+      expect(html, contains(AnimationPalette.light.bg));
+    });
+
+    test('documents follow the app language and theme', () {
+      final html = bstAnimation(
+        'Binary search trees',
+        language: AppLanguage.arabic,
+        theme: AnimationTheme.dark,
+      );
+      checkContract(html);
+      expect(html, contains('<html lang="ar" dir="rtl">'));
+      final copy = AnimationCopy.of(AppLanguage.arabic);
+      expect(html, contains('>${copy.back}</button>'));
+      expect(html, contains('>${copy.next}</button>'));
+      expect(html, contains(copy.stepTemplate));
+      expect(html, isNot(contains('>Back<')));
+      expect(html, contains(AnimationPalette.dark.bg));
+      expect(html, isNot(contains(AnimationPalette.light.bg)));
     });
 
     test('growthAnimation follows the shared contract', () {
@@ -73,6 +97,27 @@ void main() {
         ('</script><script>alert(1)</script>', 'text'),
       ]);
       expect(html, isNot(contains('</script><script>alert')));
+    });
+  });
+
+  group('animation prompt', () {
+    test('carries the app language and theme, and drops prefers-color-scheme', () {
+      final system = Prompts.animationSystemFor(
+        language: AppLanguage.arabic,
+        theme: AnimationTheme.dark,
+      );
+      expect(system, contains('dir="rtl"'));
+      expect(system, contains(AnimationPalette.dark.bg));
+      expect(system, contains('do NOT use a prefers-color-scheme'));
+      expect(system, contains(AnimationMessages.toggle));
+      final prompt = Prompts.animation(
+        'Trees',
+        const [],
+        language: AppLanguage.arabic,
+        theme: AnimationTheme.dark,
+      );
+      expect(prompt, contains('LANGUAGE: ar'));
+      expect(prompt, contains('THEME: dark'));
     });
   });
 }

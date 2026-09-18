@@ -17,7 +17,7 @@ class ZEyebrow extends StatelessWidget {
     return Text(
       label,
       style: base?.copyWith(
-        color: z.textTertiary,
+        color: z.textSecondary,
         fontWeight: FontWeight.w500,
         letterSpacing: (base.letterSpacing ?? 0) + 0.3,
       ),

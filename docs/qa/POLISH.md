@@ -37,4 +37,16 @@ Found by clicking through the running app on 2026-09-18. Each item is a real def
 19. FIXED: the Free perk reads "Processing when it's quiet".
 
 ## Light mode, Arabic, narrow widths
-20. Not yet verified. Must check light mode, Arabic RTL, and 1024px / 390px widths after the fixes.
+20. VERIFIED by lead (hands-on): light mode, Arabic RTL at 1440 and 375, the tour with all 8 steps, and the two-pane settings all work. Round 2 issues are below.
+
+# Round 2 (lead hands-on QA after the Arabic pass)
+21. Citation pills render as full-width bars on their own line under each paragraph (seen at 375px in Arabic; check LTR and desktop too). They must be small inline superscript pills that flow with the text (WidgetSpan with PlaceholderAlignment.aboveBaseline or baseline, fixed small size).
+    FIXED (builder B): cause was `Container(alignment: center)` inside the WidgetSpan, which grows to the line's full width. Now the `ZCiteMark` primitive (16px tall, sizes to its number via `Align(widthFactor: 1)`) in a top-aligned WidgetSpan. Tests check every mark is under 32px wide, LTR at 900px and RTL at 375px.
+22. On narrow layouts (bottom tabs) the composer caption says files are "on the right" (EN) / "on the left" (AR), but they live in the Status tab. Make the caption depend on layout: wide = direction hint, narrow = "Pick files in Status" (AR: "اختار الملفات من الحالة").
+    SUPERSEDED/FIXED (builder B): one caption at every width, no direction: "Using N files. Change them in Status." (AR: "بستخدم … غيّرهم من الحالة.").
+23. Tutorial scrim in light mode is too faint (about 35% dim). The spec is about 70% black in both themes. The dark scrim and lit cutout is the whole point of the NBE-style tour.
+24. Tutorial keyboard: Right arrow didn't advance after clicking Next (focus leaves the overlay after a click). Keep focus in the overlay (FocusScope with autofocus, and refocus after button taps).
+25. Landing glow: the Hibiscus wash shows faint square edges on dark. Use a radial gradient that fades fully to transparent inside its box, or a larger box.
+    FIXED (builder B): the wash now eases out over five stops and is fully transparent by 85% of its radius, so neither its box nor a phone's screen edge (at 375px the edge sits at ~91% of the radius) cuts through visible color. Needs a hands-on look on dark to confirm.
+26. When the language is switched in Settings, the dialog should stay open and update in place (it does). Also verify that switching back to English from Arabic works (one tap didn't seem to register; possibly the segmented control's hit area in RTL).
+    CHECKED (builder B), no fix: a widget test with app.dart's wiring (the MaterialApp rebuilds on the language change) switches EN to AR and back to EN with one tap each, and the dialog stays open. ZSegmented's hit areas are correct in RTL (each segment is a full-width `Pressable`, and the thumb is directional). Could not reproduce. If it still happens in the browser, it is likely the first tap landing during the ~200ms theme cross-fade after the Arabic switch, not the hit area.

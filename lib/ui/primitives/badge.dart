@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'spark.dart';
 
-enum ZBadgeTone { neutral, accent, success, warning, danger }
+/// [spark] is the amber delight tone (cache hits, finished work); it shows
+/// the brand spark in place of an icon when no [ZBadge.icon] is given.
+enum ZBadgeTone { neutral, accent, success, warning, danger, spark }
 
 /// Compact pill label used for status/tone indicators.
 class ZBadge extends StatelessWidget {
@@ -18,19 +21,26 @@ class ZBadge extends StatelessWidget {
     final (bg, fg) = switch (tone) {
       ZBadgeTone.neutral => (z.raised2, z.textSecondary),
       ZBadgeTone.accent => (z.accentSoft, z.accentText),
-      ZBadgeTone.success => (z.success.withValues(alpha: 0.16), z.success),
-      ZBadgeTone.warning => (z.warning.withValues(alpha: 0.16), z.warning),
-      ZBadgeTone.danger => (z.danger.withValues(alpha: 0.16), z.danger),
+      // The *Text tokens keep 11px labels at AA on the 16% tint.
+      ZBadgeTone.success => (z.success.withValues(alpha: 0.16), z.successText),
+      ZBadgeTone.warning => (z.warning.withValues(alpha: 0.16), z.warningText),
+      ZBadgeTone.danger => (z.danger.withValues(alpha: 0.16), z.dangerText),
+      ZBadgeTone.spark => (z.spark.withValues(alpha: 0.16), z.sparkText),
     };
+    final Widget? leading = icon != null
+        ? Icon(icon, size: 12, color: fg)
+        : tone == ZBadgeTone.spark
+            ? ZSparkGlyph(size: 12, color: z.spark)
+            : null;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: ZSpace.s8, vertical: 2),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZRadius.pill)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 12, color: fg),
-            const SizedBox(width: 4),
+          if (leading != null) ...[
+            leading,
+            const SizedBox(width: ZSpace.s4),
           ],
           Flexible(
             child: Text(

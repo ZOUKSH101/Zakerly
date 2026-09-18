@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../../../l10n/strings.dart';
@@ -19,11 +20,13 @@ Future<void> showSpotlightTutorial(BuildContext context) {
   final completer = Completer<void>();
   late OverlayEntry entry;
   entry = OverlayEntry(
-    builder: (context) => _TutorialOverlay(
-      onDone: () {
-        if (entry.mounted) entry.remove();
-        if (!completer.isCompleted) completer.complete();
-      },
+    builder: (context) => _HitTestGate(
+      child: _TutorialOverlay(
+        onDone: () {
+          if (entry.mounted) entry.remove();
+          if (!completer.isCompleted) completer.complete();
+        },
+      ),
     ),
   );
   overlayState.insert(entry);
@@ -31,6 +34,26 @@ Future<void> showSpotlightTutorial(BuildContext context) {
 }
 
 enum _Side { top, bottom, left, right }
+
+/// Lets the tour hit-test the app underneath it: while [_RenderHitTestGate.open]
+/// is set, the overlay reports no hit, so a hit test at a target's centre
+/// reaches whatever is really there.
+class _HitTestGate extends SingleChildRenderObjectWidget {
+  const _HitTestGate({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderHitTestGate();
+}
+
+class _RenderHitTestGate extends RenderProxyBox {
+  static bool open = false;
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (open) return false;
+    return super.hitTest(result, position: position);
+  }
+}
 
 class _TutorialOverlay extends StatefulWidget {
   const _TutorialOverlay({required this.onDone});
@@ -43,33 +66,50 @@ class _TutorialOverlay extends StatefulWidget {
 
 class _TutorialOverlayState extends State<_TutorialOverlay> with WidgetsBindingObserver {
   int _index = 0;
+
+  /// False until the first post-frame check; nothing is drawn before then.
+  bool _ready = false;
+
+  /// For each step, the key it lights up (its target, or a fallback), or
+  /// nothing if no key is visible and hittable. Refreshed by [_resolve],
+  /// which hit-tests, so only after the overlay has been laid out.
+  final Map<int, GlobalKey> _resolved = {};
+
+  final FocusScopeNode _scopeNode = FocusScopeNode(debugLabel: 'tutorial.scope');
   final FocusNode _focusNode = FocusNode(debugLabel: 'tutorial.overlay');
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final start = _firstValidFrom(0);
-    if (start == -1) {
-      // Nothing is mounted/sized yet (e.g. every panel is hidden on a very
-      // narrow screen) — bail out after this frame instead of showing an
-      // empty scrim.
-      WidgetsBinding.instance.addPostFrameCallback((_) => widget.onDone());
-    } else {
-      _index = start;
+    // Targets are measured and hit-tested after the first frame, once this
+    // overlay has a size of its own.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _resolve();
+      final start = _firstValidFrom(0);
+      if (start == -1) {
+        // Nothing is visible (e.g. every panel is hidden on a very narrow
+        // screen): bail out instead of showing an empty scrim.
+        widget.onDone();
+        return;
+      }
+      setState(() {
+        _index = start;
+        _ready = true;
+      });
       // Grab keyboard focus explicitly: the overlay is inserted directly
       // (not pushed as a route), so whatever was focused before it opened
       // (e.g. the button that triggered it) would otherwise keep it.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _focusNode.requestFocus();
-      });
-    }
+      _focusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _focusNode.dispose();
+    _scopeNode.dispose();
     super.dispose();
   }
 
@@ -77,7 +117,8 @@ class _TutorialOverlayState extends State<_TutorialOverlay> with WidgetsBindingO
   void didChangeMetrics() {
     // Window resized — a target may have appeared, disappeared, or moved.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || !_ready) return;
+      _resolve();
       setState(() {
         if (!_isValid(_index)) {
           final next = _firstValidFrom(_index);
@@ -91,18 +132,71 @@ class _TutorialOverlayState extends State<_TutorialOverlay> with WidgetsBindingO
     });
   }
 
-  Rect? _rectFor(GlobalKey key) {
-    final ctx = key.currentContext;
-    if (ctx == null) return null;
-    final box = ctx.findRenderObject();
-    if (box is! RenderBox || !box.hasSize) return null;
-    final size = box.size;
-    if (size.width <= 0 || size.height <= 0) return null;
-    final origin = box.localToGlobal(Offset.zero);
-    return Rect.fromLTWH(origin.dx, origin.dy, size.width, size.height);
+  static RenderBox? _boxFor(GlobalKey key) {
+    final box = key.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return null;
+    if (box.size.width <= 0 || box.size.height <= 0) return null;
+    return box;
   }
 
-  bool _isValid(int i) => _rectFor(tutorialSteps[i].target) != null;
+  static Rect? _rectFor(GlobalKey key) {
+    final box = _boxFor(key);
+    if (box == null) return null;
+    final origin = box.localToGlobal(Offset.zero);
+    return origin & box.size;
+  }
+
+  /// Whether a pointer at the target actually reaches its RenderBox. This
+  /// rules out targets that are mounted and sized but not really on screen:
+  /// a hidden IndexedStack tab, an Offstage panel, something off-screen or
+  /// under another layer. Samples the centre and four inner points, so a
+  /// target with an empty gap in its middle still counts.
+  bool _reachable(GlobalKey key) {
+    final box = _boxFor(key);
+    final ctx = key.currentContext;
+    if (box == null || ctx == null) return false;
+    final view = View.maybeOf(ctx);
+    if (view == null) return false;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+    final points = [
+      rect.center,
+      Offset(rect.left + rect.width * 0.25, rect.top + rect.height * 0.25),
+      Offset(rect.left + rect.width * 0.75, rect.top + rect.height * 0.25),
+      Offset(rect.left + rect.width * 0.25, rect.top + rect.height * 0.75),
+      Offset(rect.left + rect.width * 0.75, rect.top + rect.height * 0.75),
+    ];
+    _RenderHitTestGate.open = true;
+    try {
+      for (final p in points) {
+        final result = HitTestResult();
+        WidgetsBinding.instance.hitTestInView(result, p, view.viewId);
+        if (result.path.any((e) => identical(e.target, box))) return true;
+      }
+      return false;
+    } finally {
+      _RenderHitTestGate.open = false;
+    }
+  }
+
+  void _resolve() {
+    _resolved.clear();
+    final steps = tutorialSteps;
+    for (var i = 0; i < steps.length; i++) {
+      for (final key in steps[i].keys) {
+        if (_reachable(key)) {
+          _resolved[i] = key;
+          break;
+        }
+      }
+    }
+  }
+
+  Rect? _stepRect(int i) {
+    final key = _resolved[i];
+    return key == null ? null : _rectFor(key);
+  }
+
+  bool _isValid(int i) => _stepRect(i) != null;
 
   int _firstValidFrom(int start) {
     final total = tutorialSteps.length;
@@ -114,11 +208,21 @@ class _TutorialOverlayState extends State<_TutorialOverlay> with WidgetsBindingO
   }
 
   List<int> get _visibleIndexes => [
-        for (var i = 0; i < tutorialSteps.length; i++)
-          if (_isValid(i)) i,
-      ];
+    for (var i = 0; i < tutorialSteps.length; i++)
+      if (_isValid(i)) i,
+  ];
+
+  /// Keeps keyboard focus inside the tour after a pointer tap on one of its
+  /// buttons or the scrim (which would otherwise leave nothing focused, so
+  /// the arrow keys stop working). Leaves a keyboard-focused button alone.
+  void _keepFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_scopeNode.hasFocus) _focusNode.requestFocus();
+    });
+  }
 
   void _next() {
+    _resolve();
     final visible = _visibleIndexes;
     final pos = visible.indexOf(_index);
     if (pos == -1 || pos == visible.length - 1) {
@@ -126,26 +230,29 @@ class _TutorialOverlayState extends State<_TutorialOverlay> with WidgetsBindingO
       return;
     }
     setState(() => _index = visible[pos + 1]);
+    _keepFocus();
   }
 
   void _back() {
+    _resolve();
     final visible = _visibleIndexes;
     final pos = visible.indexOf(_index);
     if (pos <= 0) return;
     setState(() => _index = visible[pos - 1]);
+    _keepFocus();
   }
 
   void _skip() => widget.onDone();
 
   @override
   Widget build(BuildContext context) {
-    if (!_isValid(_index)) return const SizedBox.shrink();
+    if (!_ready || !_isValid(_index)) return const SizedBox.shrink();
 
     final z = context.z;
     final t = S.of(context);
     final reduced = MediaQuery.disableAnimationsOf(context);
     final screen = MediaQuery.sizeOf(context);
-    final target = _rectFor(tutorialSteps[_index].target)!.inflate(8);
+    final target = _stepRect(_index)!.inflate(8);
     final visible = _visibleIndexes;
     final pos = visible.indexOf(_index);
     final step = tutorialStepsFor(t)[_index];
@@ -164,47 +271,60 @@ class _TutorialOverlayState extends State<_TutorialOverlay> with WidgetsBindingO
         const SingleActivator(LogicalKeyboardKey.arrowLeft): rtl ? _next : _back,
         const SingleActivator(LogicalKeyboardKey.arrowUp): _back,
       },
-      child: Focus(
-        focusNode: _focusNode,
+      // A focus scope of its own: Tab cycles through the bubble's buttons
+      // and never reaches the app under the scrim. BlockSemantics hides that
+      // app from screen readers for the same reason.
+      child: FocusScope(
+        node: _scopeNode,
         autofocus: true,
-        child: Semantics(
-          scopesRoute: true,
-          namesRoute: true,
-          explicitChildNodes: true,
-          liveRegion: true,
-          label: t.tutorialSemantics(pos + 1, visible.length, step.title, step.body),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _next,
-                child: TweenAnimationBuilder<Rect?>(
-                  tween: RectTween(begin: target, end: target),
-                  duration: reduced ? Duration.zero : ZMotion.medium,
-                  curve: ZMotion.standard,
-                  builder: (context, animatedRect, _) {
-                    return CustomPaint(
-                      painter: _ScrimPainter(cutout: animatedRect ?? target, glow: z.accent),
-                    );
-                  },
-                ),
+        child: Focus(
+          focusNode: _focusNode,
+          autofocus: true,
+          child: BlockSemantics(
+            child: Semantics(
+              scopesRoute: true,
+              namesRoute: true,
+              explicitChildNodes: true,
+              liveRegion: true,
+              label: t.tutorialSemantics(pos + 1, visible.length, step.title, step.body),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _next,
+                    child: TweenAnimationBuilder<Rect?>(
+                      tween: RectTween(begin: target, end: target),
+                      duration: reduced ? Duration.zero : ZMotion.medium,
+                      curve: ZMotion.standard,
+                      builder: (context, animatedRect, _) {
+                        return CustomPaint(
+                          painter: _ScrimPainter(
+                            cutout: animatedRect ?? target,
+                            glow: z.accent,
+                            scrim: z.scrim,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  _TooltipBubble(
+                    target: target,
+                    screen: screen,
+                    side: side,
+                    title: step.title,
+                    body: step.body,
+                    stepNumber: pos + 1,
+                    stepTotal: visible.length,
+                    isLast: isLast,
+                    canGoBack: pos > 0,
+                    onNext: _next,
+                    onBack: _back,
+                    onSkip: _skip,
+                  ),
+                ],
               ),
-              _TooltipBubble(
-                target: target,
-                screen: screen,
-                side: side,
-                title: step.title,
-                body: step.body,
-                stepNumber: pos + 1,
-                stepTotal: visible.length,
-                isLast: isLast,
-                canGoBack: pos > 0,
-                onNext: _next,
-                onBack: _back,
-                onSkip: _skip,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -228,23 +348,24 @@ _Side _bestSide(Rect target, Size screen, {bool rtl = false}) {
   return _Side.left;
 }
 
-/// Paints the ~70%-black scrim with a rounded-rect hole over [cutout], plus
-/// a soft glow ring in the accent color around the hole's edge.
+/// Paints the [scrim] (`z.scrim`, ~70% black in both themes) with a
+/// rounded-rect hole over [cutout], plus a soft glow ring in the accent
+/// color around the hole's edge.
 class _ScrimPainter extends CustomPainter {
-  _ScrimPainter({required this.cutout, required this.glow});
+  _ScrimPainter({required this.cutout, required this.glow, required this.scrim});
 
   final Rect cutout;
   final Color glow;
+  final Color scrim;
 
   static const _radius = Radius.circular(ZRadius.lg);
-  static const _scrim = Color(0xB3000000); // black @ ~70%
 
   @override
   void paint(Canvas canvas, Size size) {
     final outer = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     final hole = Path()..addRRect(RRect.fromRectAndRadius(cutout, _radius));
     final scrimPath = Path.combine(PathOperation.difference, outer, hole);
-    canvas.drawPath(scrimPath, Paint()..color = _scrim);
+    canvas.drawPath(scrimPath, Paint()..color = scrim);
 
     final glowRRect = RRect.fromRectAndRadius(cutout, _radius);
     canvas.drawRRect(
@@ -259,7 +380,7 @@ class _ScrimPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ScrimPainter oldDelegate) {
-    return oldDelegate.cutout != cutout || oldDelegate.glow != glow;
+    return oldDelegate.cutout != cutout || oldDelegate.glow != glow || oldDelegate.scrim != scrim;
   }
 }
 
@@ -403,15 +524,16 @@ class _BubbleCard extends StatelessWidget {
       children: [
         ZCard(
           padding: ZSpace.s16,
+          // No live region here: the overlay's own Semantics already
+          // announces each step; a nested one read it twice.
           child: Semantics(
-            liveRegion: true,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   t.stepOf(stepNumber, stepTotal),
-                  style: context.type.labelSmall?.copyWith(color: z.textTertiary),
+                  style: context.type.labelSmall?.copyWith(color: z.textSecondary),
                 ),
                 const SizedBox(height: ZSpace.s4),
                 Text(title, style: context.type.titleMedium?.copyWith(color: z.text)),
@@ -441,11 +563,7 @@ class _BubbleCard extends StatelessWidget {
                           ),
                           const SizedBox(width: ZSpace.s8),
                         ],
-                        ZButton(
-                          label: isLast ? t.done : t.next,
-                          size: ZButtonSize.sm,
-                          onPressed: onNext,
-                        ),
+                        ZButton(label: isLast ? t.done : t.next, size: ZButtonSize.sm, onPressed: onNext),
                       ],
                     ),
                   ],

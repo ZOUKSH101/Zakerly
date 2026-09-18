@@ -8,11 +8,23 @@ import 'tutorial_targets.dart';
 /// One stop of the spotlight tour: the real widget to light up, a one-line
 /// title, and one short sentence.
 class TutorialStep {
-  TutorialStep({required this.target, required this.title, required this.body});
+  TutorialStep({
+    required this.target,
+    required this.title,
+    required this.body,
+    this.fallbacks = const [],
+  });
 
   final GlobalKey target;
+
+  /// Tried in order when [target] isn't visible (e.g. a compact variant of
+  /// the same control in a narrow layout).
+  final List<GlobalKey> fallbacks;
   final String title;
   final String body;
+
+  /// [target] first, then [fallbacks].
+  List<GlobalKey> get keys => [target, ...fallbacks];
 }
 
 /// The real flow, in order: sync Canvas, pick a course, choose the files,
@@ -37,7 +49,12 @@ List<TutorialStep> tutorialStepsFor(S t) => [
         title: t.tutorialVisualizeTitle,
         body: t.tutorialVisualizeBody,
       ),
-      TutorialStep(target: TutorialTargets.budget, title: t.tutorialBudgetTitle, body: t.tutorialBudgetBody),
+      TutorialStep(
+        target: TutorialTargets.budget,
+        fallbacks: [TutorialTargets.budgetPill],
+        title: t.tutorialBudgetTitle,
+        body: t.tutorialBudgetBody,
+      ),
       TutorialStep(
         target: TutorialTargets.settings,
         title: t.tutorialSettingsTitle,

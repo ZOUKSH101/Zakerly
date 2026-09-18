@@ -5,6 +5,7 @@ import 'package:zakerly/core/app_services.dart';
 import 'package:zakerly/core/models.dart';
 import 'package:zakerly/core/scheduler.dart';
 import 'package:zakerly/ui/features/status/status_panel.dart';
+import 'package:zakerly/ui/features/tutorial/tutorial_targets.dart';
 import 'package:zakerly/ui/theme.dart';
 
 Widget _harness(AppServices s) {
@@ -31,6 +32,20 @@ void main() {
     expect(find.text('Free'), findsOneWidget);
     expect(find.text('New animations today'), findsNothing);
     expect(find.textContaining('Saved by cache'), findsNothing);
+  });
+
+  testWidgets('cards are inset from the panel edges by the panel padding', (tester) async {
+    final s = AppServices.demo();
+    addTearDown(s.scheduler.dispose);
+
+    await tester.pumpWidget(_harness(s));
+    await tester.pump();
+
+    final panel = tester.getRect(find.byType(StatusPanel));
+    final card = tester.getRect(find.byKey(TutorialTargets.budget));
+    expect(card.left - panel.left, ZLayout.panelPadding);
+    expect(panel.right - card.right, ZLayout.panelPadding);
+    expect(card.top - panel.top, ZLayout.panelPadding);
   });
 
   testWidgets('budget pill switches to Your key under BYOK', (tester) async {
@@ -133,10 +148,9 @@ void main() {
     expect(find.byTooltip('Process now'), findsOneWidget);
     expect(find.text('Pro'), findsNothing);
     expect(find.byIcon(Icons.lock_outline), findsNothing);
-    // Only the dot and the name: the wait reason lives in a tooltip.
+    // The first waiting row says why in words, as a one-line subtitle.
     expect(find.text('Course notes'), findsOneWidget);
-    expect(find.text('Waiting for a free slot'), findsNothing);
-    expect(find.byTooltip('Waiting for a free slot'), findsOneWidget);
+    expect(find.text('Waiting for a free slot'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Process now'));
     await tester.pump();

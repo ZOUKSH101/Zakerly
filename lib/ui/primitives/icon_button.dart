@@ -23,6 +23,9 @@ class ZIconButton extends StatelessWidget {
   /// point "forward" (the reading direction) rather than at a fixed side.
   final bool mirrorInRtl;
 
+  /// Edge of the tappable area (the visible chip is [ZLayout.iconButtonSize]).
+  static const double hitSize = 44;
+
   @override
   Widget build(BuildContext context) {
     final z = context.z;
@@ -34,18 +37,24 @@ class ZIconButton extends StatelessWidget {
       glyph = Transform.flip(flipX: true, child: glyph);
     }
 
+    // The visible chip stays 32px; the hit target around it is 44px.
     return Tooltip(
       message: tooltip,
       child: Pressable(
         onTap: disabled ? null : onPressed,
-        child: AnimatedContainer(
-          duration: ZMotion.medium,
-          curve: ZMotion.standard,
-          width: 32,
-          height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZRadius.sm)),
-          child: glyph,
+        child: SizedBox.square(
+          dimension: ZIconButton.hitSize,
+          child: Center(
+            child: AnimatedContainer(
+              duration: ZMotion.medium,
+              curve: ZMotion.standard,
+              width: ZLayout.iconButtonSize,
+              height: ZLayout.iconButtonSize,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(ZRadius.sm)),
+              child: glyph,
+            ),
+          ),
         ),
       ),
     );

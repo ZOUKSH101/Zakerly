@@ -67,15 +67,19 @@ class ZSegmented<T> extends StatelessWidget {
                         width: width,
                         child: _withTooltip(
                           i,
-                          Pressable(
-                            onTap: () => onChanged(seg.$1),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6),
-                              child: Center(
-                                child: Text(
-                                  seg.$2,
-                                  style: context.type.labelLarge?.copyWith(
-                                    color: seg.$1 == selected ? z.text : z.textSecondary,
+                          Semantics(
+                            selected: seg.$1 == selected,
+                            inMutuallyExclusiveGroup: true,
+                            child: Pressable(
+                              onTap: () => onChanged(seg.$1),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                child: Center(
+                                  child: Text(
+                                    seg.$2,
+                                    style: context.type.labelLarge?.copyWith(
+                                      color: seg.$1 == selected ? z.text : z.textSecondary,
+                                    ),
                                   ),
                                 ),
                               ),

@@ -48,8 +48,8 @@ List<double> _fileRowExtents(BuildContext context, List<CourseFile> files, doubl
   final style = context.type.bodyLarge;
   final titleWidth = rowWidth -
       ZRow.chromeWidth(leading: true, trailing: true) -
-      _StatusDot.size -
-      _kToggleSize;
+      ZStatusDot.slot -
+      ZLayout.iconButtonSize;
   final direction = Directionality.of(context);
   final scaler = MediaQuery.textScalerOf(context);
   return [
@@ -68,40 +68,46 @@ List<double> _fileRowExtents(BuildContext context, List<CourseFile> files, doubl
   ];
 }
 
-/// Edge of a [ZIconButton].
-const double _kToggleSize = 32;
-
 class StatusPanel extends StatelessWidget {
-  const StatusPanel({super.key});
+  const StatusPanel({super.key, this.budgetTarget = true});
+
+  /// Whether the budget card carries [TutorialTargets.budget]. Off on
+  /// phones, where the Status tab is hidden and the tour lights the chat's
+  /// budget pill instead, so only one budget anchor is ever mounted.
+  final bool budgetTarget;
 
   @override
   Widget build(BuildContext context) {
     final s = Services.of(context);
-    return ListenableBuilder(
-      listenable: s.scheduler,
-      builder: (context, _) {
-        final hasProcessing = s.scheduler.open.isNotEmpty;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _BudgetCard(s: s),
-            const SizedBox(height: ZLayout.cardGap),
-            Expanded(child: _FilesCard(s: s)),
-            if (hasProcessing) ...[
+    return Padding(
+      padding: const EdgeInsets.all(ZLayout.panelPadding),
+      child: ListenableBuilder(
+        listenable: s.scheduler,
+        builder: (context, _) {
+          final hasProcessing = s.scheduler.open.isNotEmpty;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _BudgetCard(s: s, target: budgetTarget),
               const SizedBox(height: ZLayout.cardGap),
-              _ProcessingCard(s: s),
+              Expanded(child: _FilesCard(s: s)),
+              if (hasProcessing) ...[
+                const SizedBox(height: ZLayout.cardGap),
+                _ProcessingCard(s: s),
+              ],
             ],
-          ],
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
 
 class _BudgetCard extends StatelessWidget {
-  const _BudgetCard({required this.s});
+  const _BudgetCard({required this.s, required this.target});
 
   final AppServices s;
+  final bool target;
 
   static const double _ringSize = 64;
 
@@ -114,7 +120,7 @@ class _BudgetCard extends StatelessWidget {
         final t = S.of(context);
         final pct = (budget.fraction * 100).round();
         return ZCard(
-          key: TutorialTargets.budget,
+          key: target ? TutorialTargets.budget : null,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -122,7 +128,17 @@ class _BudgetCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(t.budget, style: context.type.titleMedium),
+                  Flexible(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        t.budget,
+                        style: context.type.titleMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
                   ZBadge(label: budget.useOwnKey ? t.yourKey : t.planName(budget.tier)),
                 ],
               ),
@@ -190,7 +206,7 @@ class _FilesCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(t.files, style: context.type.titleMedium),
+              Semantics(header: true, child: Text(t.files, style: context.type.titleMedium)),
               const SizedBox(height: ZSpace.s12),
               Expanded(
                 child: course == null
@@ -269,13 +285,11 @@ class _StatusDot extends StatelessWidget {
 
   final FileStatus status;
 
-  static const double size = 10;
-
   @override
   Widget build(BuildContext context) {
     final label = S.of(context).fileStatus(status);
     if (status == FileStatus.processing) {
-      return Semantics(label: label, child: const ZSpinner(size: size));
+      return Semantics(label: label, child: const ZSpinner(size: ZStatusDot.slot));
     }
     final z = context.z;
     final color = switch (status) {
@@ -285,22 +299,7 @@ class _StatusDot extends StatelessWidget {
       FileStatus.unprocessed => z.textTertiary,
       FileStatus.processing => z.accent,
     };
-    return Tooltip(
-      message: label,
-      child: Semantics(
-        label: label,
-        child: SizedBox.square(
-          dimension: size,
-          child: Center(
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-          ),
-        ),
-      ),
-    );
+    return ZStatusDot(color: color, label: label);
   }
 }
 
@@ -322,6 +321,9 @@ class _ProcessingCard extends StatelessWidget {
         final open = scheduler.open.toList();
         final visible = open.take(_maxVisible).toList();
         final overflow = open.length - visible.length;
+        // Say why things wait in words, once: under the running rows and the
+        // first waiting one. The rest keep it as hover text.
+        final firstWaiting = visible.indexWhere((j) => j.state != JobState.running);
 
         return ZCard(
           child: Column(
@@ -331,7 +333,17 @@ class _ProcessingCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(t.inProgress, style: context.type.titleMedium),
+                  Flexible(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        t.inProgress,
+                        style: context.type.titleMedium,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
                   ZIconButton(
                     icon: policy.simulateOffPeak ? Icons.bedtime : Icons.bedtime_outlined,
                     tooltip: t.demoNight(policy),
@@ -341,7 +353,12 @@ class _ProcessingCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: ZSpace.s12),
-              for (final job in visible) _JobRow(s: s, job: job),
+              for (final (i, job) in visible.indexed)
+                _JobRow(
+                  s: s,
+                  job: job,
+                  showReason: job.state == JobState.running || i == firstWaiting,
+                ),
               if (overflow > 0)
                 Padding(
                   padding: const EdgeInsets.only(top: ZSpace.s4),
@@ -356,12 +373,15 @@ class _ProcessingCard extends StatelessWidget {
 }
 
 class _JobRow extends StatelessWidget {
-  const _JobRow({required this.s, required this.job});
+  const _JobRow({required this.s, required this.job, required this.showReason});
 
   static const _processPrefix = 'Process ';
 
   final AppServices s;
   final Job job;
+
+  /// Show the reason as a one-line subtitle rather than only on hover.
+  final bool showReason;
 
   @override
   Widget build(BuildContext context) {
@@ -383,22 +403,11 @@ class _JobRow extends StatelessWidget {
 
     return ZRow(
       leading: running
-          ? const ZSpinner(size: _StatusDot.size)
-          : SizedBox.square(
-              dimension: _StatusDot.size,
-              child: Center(
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: job.lane == JobLane.interactive ? z.accent : z.textTertiary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
+          ? const ZSpinner(size: ZStatusDot.slot)
+          : ZStatusDot(color: job.lane == JobLane.interactive ? z.accent : z.textTertiary),
       title: title,
-      tooltip: reason,
+      subtitle: showReason ? reason : null,
+      tooltip: showReason ? null : reason,
       trailing: canPrioritize
           ? ZIconButton(
               icon: Icons.fast_forward_rounded,

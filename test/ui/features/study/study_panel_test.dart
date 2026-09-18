@@ -150,8 +150,88 @@ void main() {
       expect(find.text('1'), findsNWidgets(3));
       expect(find.text('2'), findsNWidgets(2));
       expect(find.byKey(const ValueKey('animate-answer')), findsOneWidget);
+
+      // Inline marks are small superscripts, never full-width bars.
+      final marks = find.byType(ZCiteMark);
+      expect(marks, findsNWidgets(5));
+      for (var i = 0; i < 5; i++) {
+        final size = tester.getSize(marks.at(i));
+        expect(size.width, lessThan(ZLayout.citeMarkSize * 2), reason: 'mark $i width');
+        expect(size.height, ZLayout.citeMarkSize, reason: 'mark $i height');
+      }
     },
   );
+
+  testWidgets('citation marks stay small and inline right to left at 375px', (tester) async {
+    final file = CourseFile(id: 'f1', courseId: 'c1', name: 'Week 3 - Trees.pdf', kind: 'pdf', sourceTokens: 100)
+      ..status = FileStatus.ready;
+    final course = _course(id: 'c1', code: 'CS1', files: [file]);
+    final s = AppServices.demo();
+    addTearDown(s.scheduler.dispose);
+    s.courses.courses = [course];
+    s.session.selectCourse(course.id);
+    s.tutor.thread(course.id)
+      ..add(ChatMessage(author: Author.student, text: 'سؤال'))
+      ..add(ChatMessage(
+        author: Author.tutor,
+        text: 'الشجرة بتحافظ على الترتيب. [Week 3 - Trees.pdf · Intro] وبعدين نكمل.',
+      ));
+
+    await tester.pumpWidget(MaterialApp(
+      theme: buildTheme(Brightness.dark, arabic: true),
+      home: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Services(
+          services: s,
+          child: Scaffold(
+            body: SizedBox(width: 375, height: 700, child: StudyPanel(onVisualize: (_, _) {})),
+          ),
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    final marks = find.byType(ZCiteMark);
+    expect(marks, findsNWidgets(2)); // inline + source list
+    for (var i = 0; i < 2; i++) {
+      expect(tester.getSize(marks.at(i)).width, lessThan(ZLayout.citeMarkSize * 2));
+    }
+  });
+
+  testWidgets('with today\'s animations used up, Animate it still opens (cached ones are free)', (
+    tester,
+  ) async {
+    final file = CourseFile(id: 'f1', courseId: 'c1', name: 'Week 1.pdf', kind: 'pdf', sourceTokens: 100)
+      ..status = FileStatus.ready;
+    final course = _course(id: 'c1', code: 'CS1', files: [file]);
+
+    final s = AppServices.demo();
+    addTearDown(s.scheduler.dispose);
+    s.courses.courses = [course];
+    s.session.selectCourse(course.id);
+    for (var i = 0; i < s.budget.plan.animationsPerDay; i++) {
+      s.budget.countAnimation();
+    }
+    expect(s.budget.canGenerateAnimation, isFalse);
+
+    final thread = s.tutor.thread(course.id);
+    thread.add(ChatMessage(author: Author.student, text: 'What is a BST?'));
+    thread.add(
+      ChatMessage(author: Author.tutor, text: 'Keeps order. [Week 1.pdf · Intro]')
+        ..citations = const [Citation('Week 1.pdf', 'Intro')],
+    );
+
+    var opened = 0;
+    await tester.pumpWidget(_harness(s, onVisualize: (_, _) => opened++));
+    await tester.pump();
+
+    final animate = tester.widget<ZButton>(find.byKey(const ValueKey('animate-answer')));
+    expect(animate.onPressed, isNotNull);
+    expect(tester.widget<ZIconButton>(find.byKey(TutorialTargets.visualize)).onPressed, isNotNull);
+    await tester.tap(find.byKey(const ValueKey('animate-answer')));
+    await tester.pump();
+    expect(opened, 1);
+  });
 
   testWidgets('Process now promotes the course\'s open background job to the live lane', (
     tester,

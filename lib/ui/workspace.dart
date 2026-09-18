@@ -40,6 +40,7 @@ class Workspace extends StatefulWidget {
 
 class _WorkspaceState extends State<Workspace> {
   final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _studyKey = GlobalKey(debugLabel: 'workspace.study');
   int _tabIndex = 1; // Courses / Study / Status -> default to Study.
 
   @override
@@ -69,74 +70,94 @@ class _WorkspaceState extends State<Workspace> {
 
   @override
   Widget build(BuildContext context) {
+    // One Scaffold for every width, and the chat keeps a GlobalKey, so
+    // crossing a breakpoint moves the StudyPanel instead of rebuilding it:
+    // the draft, scroll position and focus survive a window resize.
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        if (width >= _Breakpoints.wide) return _buildWide(context);
-        if (width >= _Breakpoints.medium) return _buildMedium(context);
-        return _buildNarrow(context);
+        final layout = width >= _Breakpoints.wide
+            ? _Layout.wide
+            : (width >= _Breakpoints.medium ? _Layout.medium : _Layout.narrow);
+        final study = StudyPanel(
+          key: _studyKey,
+          onVisualize: _visualize,
+          onOpenStatus: switch (layout) {
+            _Layout.wide => null,
+            _Layout.medium => () => _scaffoldKey.currentState?.openEndDrawer(),
+            _Layout.narrow => () => setState(() => _tabIndex = 2),
+          },
+          budgetPillTarget: layout == _Layout.narrow,
+        );
+        return Scaffold(
+          key: _scaffoldKey,
+          endDrawer: layout == _Layout.medium
+              ? const Drawer(
+                  width: 320,
+                  child: SafeArea(child: StatusPanel()),
+                )
+              : null,
+          body: switch (layout) {
+            _Layout.wide => _buildWide(study),
+            _Layout.medium => _buildMedium(study),
+            _Layout.narrow => _buildNarrow(study),
+          },
+          bottomNavigationBar: layout == _Layout.narrow ? _buildTabs(context) : null,
+        );
       },
     );
   }
 
-  Widget _buildWide(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(width: 272, child: CourseRail(onOpenSettings: _openSettings)),
-          Expanded(child: StudyPanel(onVisualize: _visualize)),
-          const SizedBox(width: 320, child: StatusPanel()),
-        ],
-      ),
+  Widget _buildWide(Widget study) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(width: 272, child: CourseRail(onOpenSettings: _openSettings)),
+        Expanded(child: study),
+        const SizedBox(width: 320, child: StatusPanel()),
+      ],
     );
   }
 
-  Widget _buildMedium(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      endDrawer: const Drawer(
-        width: 320,
-        child: SafeArea(child: StatusPanel()),
-      ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(width: 248, child: CourseRail(onOpenSettings: _openSettings)),
-          Expanded(
-            child: StudyPanel(
-              onVisualize: _visualize,
-              onOpenStatus: () => _scaffoldKey.currentState?.openEndDrawer(),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildMedium(Widget study) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(width: 248, child: CourseRail(onOpenSettings: _openSettings)),
+        Expanded(child: study),
+      ],
     );
   }
 
-  Widget _buildNarrow(BuildContext context) {
-    final t = S.of(context);
+  Widget _buildNarrow(Widget study) {
     final pages = <Widget>[
-      CourseRail(onOpenSettings: _openSettings),
-      StudyPanel(
-        onVisualize: _visualize,
-        onOpenStatus: () => setState(() => _tabIndex = 2),
+      // Picking a course on the Courses tab takes you to the chat for it.
+      CourseRail(
+        onOpenSettings: _openSettings,
+        onCourseSelected: () => setState(() => _tabIndex = 1),
       ),
-      const StatusPanel(),
+      study,
+      // The Status tab is hidden most of the time, so the tour points at
+      // the chat's budget pill instead (one budget anchor at a time).
+      const StatusPanel(budgetTarget: false),
     ];
-    return Scaffold(
-      body: SafeArea(
-        child: IndexedStack(index: _tabIndex, children: pages),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _tabIndex,
-        onDestinationSelected: (i) => setState(() => _tabIndex = i),
-        destinations: [
-          NavigationDestination(icon: const Icon(Icons.school_outlined), label: t.navCourses),
-          NavigationDestination(icon: const Icon(Icons.chat_bubble_outline), label: t.navStudy),
-          NavigationDestination(icon: const Icon(Icons.insights_outlined), label: t.navStatus),
-        ],
-      ),
+    return SafeArea(
+      child: IndexedStack(index: _tabIndex, children: pages),
+    );
+  }
+
+  Widget _buildTabs(BuildContext context) {
+    final t = S.of(context);
+    return NavigationBar(
+      selectedIndex: _tabIndex,
+      onDestinationSelected: (i) => setState(() => _tabIndex = i),
+      destinations: [
+        NavigationDestination(icon: const Icon(Icons.school_outlined), label: t.navCourses),
+        NavigationDestination(icon: const Icon(Icons.chat_bubble_outline), label: t.navStudy),
+        NavigationDestination(icon: const Icon(Icons.insights_outlined), label: t.navStatus),
+      ],
     );
   }
 }
+
+enum _Layout { wide, medium, narrow }

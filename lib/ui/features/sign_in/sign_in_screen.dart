@@ -178,10 +178,27 @@ class _SignInScreenState extends State<SignInScreen> {
                           const SizedBox(height: ZSpace.s12),
                           Semantics(
                             liveRegion: true,
-                            child: Text(
-                              t.signInError,
-                              textAlign: TextAlign.center,
-                              style: type.bodySmall?.copyWith(color: z.danger),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: ZLayout.nudge),
+                                  child: Icon(
+                                    Icons.error_outline_rounded,
+                                    size: ZIcon.sm,
+                                    color: z.danger,
+                                  ),
+                                ),
+                                const SizedBox(width: ZSpace.s4),
+                                Flexible(
+                                  child: Text(
+                                    t.signInError,
+                                    textAlign: TextAlign.center,
+                                    style: type.bodySmall?.copyWith(color: z.danger),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -253,11 +270,23 @@ class _GlowingMark extends StatelessWidget {
                 duration: ZMotion.staggerOpacity,
                 curve: ZMotion.decel,
                 builder: (context, t, child) => Opacity(opacity: t, child: child),
+                // The wash reaches fully transparent well inside its circle
+                // (by 85% of the radius), with an eased falloff, so no edge
+                // of the box, and no screen edge cutting through it on a
+                // phone, ever shows as a line on dark.
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      colors: [glow, glow.withValues(alpha: 0)],
-                      stops: const [0, 1],
+                      radius: 0.5,
+                      colors: [
+                        glow,
+                        glow.withValues(alpha: glow.a * 0.6),
+                        glow.withValues(alpha: glow.a * 0.25),
+                        glow.withValues(alpha: glow.a * 0.07),
+                        glow.withValues(alpha: 0),
+                        glow.withValues(alpha: 0),
+                      ],
+                      stops: const [0, 0.25, 0.5, 0.7, 0.85, 1],
                     ),
                   ),
                 ),

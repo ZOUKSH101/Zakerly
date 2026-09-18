@@ -138,11 +138,11 @@ class S {
   String get composerFilesNotReady =>
       _t("Your files aren't ready yet. You can still ask.", 'ملفاتك لسه مش جاهزة. بس تقدر تسأل عادي.');
 
-  /// The file list sits in the far column: on the right in English, and on
-  /// the left once the layout mirrors for Arabic.
+  /// Names the Status panel rather than a side: it is a column on desktop,
+  /// a drawer on tablets and a tab on phones.
   String composerUsingFiles(int n) => _t(
-        'Using ${_files(n)}. Pick files on the right.',
-        'بستخدم ${_files(n)}. اختار الملفات من على الشمال.',
+        'Using ${_files(n)}. Change them in Status.',
+        'بستخدم ${_files(n)}. غيّرهم من الحالة.',
       );
   String get composerNoMatch => _t(
         'Nothing in your files matches that, so this one is free.',

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../animations.dart';
+import '../preferences.dart';
 import '../services.dart';
 import '../util.dart';
 import 'mock_animations.dart';
@@ -105,12 +106,23 @@ class MockLlm implements LlmProvider {
   String _animation(String prompt) {
     final concept = RegExp(r'CONCEPT: (.*)').firstMatch(prompt)?[1]?.trim() ?? 'Concept';
     final sources = _sources(prompt);
+    final code = RegExp(r'^LANGUAGE: (\w+)', multiLine: true).firstMatch(prompt)?[1];
+    final language = AppLanguage.values.firstWhere(
+      (l) => l.code == code,
+      orElse: () => AppLanguage.english,
+    );
+    final theme = RegExp(r'^THEME: dark', multiLine: true).hasMatch(prompt)
+        ? AnimationTheme.dark
+        : AnimationTheme.light;
     return switch (matchAnimationTemplate(concept)) {
-      AnimationTemplate.tree => bstAnimation(concept),
-      AnimationTemplate.growth => growthAnimation(concept),
-      AnimationTemplate.keyIdeas => keyPointsAnimation(concept, [
-          for (final s in sources) (s.heading, _sentences(s.text).first),
-        ]),
+      AnimationTemplate.tree => bstAnimation(concept, language: language, theme: theme),
+      AnimationTemplate.growth => growthAnimation(concept, language: language, theme: theme),
+      AnimationTemplate.keyIdeas => keyPointsAnimation(
+          concept,
+          [for (final s in sources) (s.heading, _sentences(s.text).first)],
+          language: language,
+          theme: theme,
+        ),
     };
   }
 

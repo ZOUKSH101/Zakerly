@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 /// Circular progress ring. Animates value changes; color follows [fraction]
-/// thresholds unless [color] overrides it (accent below 0.7, warning below
-/// 0.9, danger at or above 0.9).
+/// thresholds unless [color] overrides it (accent below 0.7, warning from
+/// 0.7 up). It never turns red: the brand rule is "no red, no urgency".
 class ZRing extends StatelessWidget {
   const ZRing({
     super.key,
@@ -28,8 +28,7 @@ class ZRing extends StatelessWidget {
   static Color colorForFraction(ZTokens z, double f, {Color? override}) {
     if (override != null) return override;
     if (f < 0.7) return z.accent;
-    if (f < 0.9) return z.warning;
-    return z.danger;
+    return z.warning;
   }
 
   @override

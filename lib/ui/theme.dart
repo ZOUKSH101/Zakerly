@@ -47,6 +47,45 @@ class ZLayout {
 
   /// Left list in a two-pane dialog (Settings).
   static const double sideNavWidth = 196;
+
+  // ---- Feature layout (builder B, round 2) ----------------------------
+
+  /// Small avatar (course rail footer) and large avatar (Settings > Account).
+  static const double avatarSm = 28;
+  static const double avatarLg = 44;
+
+  /// Status dot: its square slot and the dot drawn inside it.
+  static const double statusDotSlot = 10;
+  static const double statusDot = 8;
+
+  /// Edge of a [ZIconButton] hit target.
+  static const double iconButtonSize = 32;
+
+  /// Inline citation mark: height and minimum width.
+  static const double citeMarkSize = 16;
+
+  /// Tiny optical nudges (e.g. aligning an icon with a text's first line,
+  /// or the gap before an inline citation mark).
+  static const double nudge = 2;
+
+  /// Course rail: one course tile and the "+N more" line.
+  static const double courseTileExtent = 76;
+  static const double moreRowExtent = 24;
+  static const int maxCourseTiles = 6;
+  static const double railLogoSize = 28;
+  static const double courseRingSize = 24;
+  static const double courseRingStroke = 3;
+  static const double courseSparkSize = 7;
+
+  /// Settings dialog: its largest size, the max width of a control row,
+  /// the width where plan cards sit side by side, a side-list item's
+  /// height, and the width below which the tabs show icons only.
+  static const double settingsMaxWidth = 900;
+  static const double settingsMaxHeight = 600;
+  static const double settingsControlMaxWidth = 360;
+  static const double planSideBySideWidth = 480;
+  static const double navItemHeight = 40;
+  static const double iconOnlyTabsWidth = 400;
 }
 
 /// Icon sizes used across primitives and features.
@@ -107,6 +146,12 @@ class ZMotion {
 
   /// Spark hop-off for "course ready" (8px up + fade out).
   static const Duration sparkHop = Duration(milliseconds: 500);
+
+  /// How long a brief confirmation (e.g. "Synced") stays up.
+  static const Duration confirm = Duration(milliseconds: 1600);
+
+  /// Hover delay before a secondary tooltip shows.
+  static const Duration tooltipWait = Duration(milliseconds: 600);
 }
 
 /// Elevation scale. Apple only casts shadow in light mode — dark surfaces
@@ -145,7 +190,10 @@ class ZTokens extends ThemeExtension<ZTokens> {
     required this.success,
     required this.successText,
     required this.warning,
+    required this.warningText,
     required this.danger,
+    required this.dangerText,
+    required this.scrim,
   });
 
   final Color surface;
@@ -175,7 +223,16 @@ class ZTokens extends ThemeExtension<ZTokens> {
   /// fills (badges, rings, bars); use this for running text.
   final Color successText;
   final Color warning;
+  /// [warning] tuned for small text on [raised] or on a 16% [warning] tint
+  /// (badges): AA (>= 4.5:1) in both themes.
+  final Color warningText;
   final Color danger;
+  /// [danger] tuned for small text on [raised] or on a 16% [danger] tint
+  /// (badges): AA (>= 4.5:1) in both themes.
+  final Color dangerText;
+  /// Full-screen dimming behind spotlights and modal overlays: black @ ~70%
+  /// in both themes (a lighter scrim washes out in dark mode).
+  final Color scrim;
 
   // Brand palette (docs/brand/BRAND.md s.3 / s.7). Ratios are WCAG 2.1.
   static const ZTokens light = ZTokens(
@@ -194,9 +251,12 @@ class ZTokens extends ThemeExtension<ZTokens> {
     onSpark: Color(0xFF1F1A1C), // 9.52:1 on spark
     sparkText: Color(0xFF8A5300), // 6.33:1 on raised
     success: Color(0xFF1E8E5A), // Mint fill, 4.14:1 UI
-    successText: Color(0xFF17774B), // 5.56:1 on raised
+    successText: Color(0xFF126B43), // 6.54:1 on raised, 5.38:1 on a 16% success tint
     warning: Color(0xFFB25000), // 5.20:1 on raised
+    warningText: Color(0xFF944200), // 6.91:1 on raised, 5.52:1 on a 16% warning tint
     danger: Color(0xFFC4320A), // 5.52:1 on raised
+    dangerText: Color(0xFFA32A0A), // 7.26:1 on raised, 5.65:1 on a 16% danger tint
+    scrim: Color(0xB3000000), // black @ ~70%
   );
 
   static const ZTokens dark = ZTokens(
@@ -215,9 +275,12 @@ class ZTokens extends ThemeExtension<ZTokens> {
     onSpark: Color(0xFF1F1A1C),
     sparkText: Color(0xFFFFB224), // 9.68:1 on raised
     success: Color(0xFF3DD68C), // 9.30:1 on raised
-    successText: Color(0xFF3DD68C),
+    successText: Color(0xFF3DD68C), // 6.80:1 on a 16% success tint
     warning: Color(0xFFFF9F0A), // 8.49:1 on raised
+    warningText: Color(0xFFFF9F0A), // 6.30:1 on a 16% warning tint
     danger: Color(0xFFFF6B4A), // 6.19:1 on raised
+    dangerText: Color(0xFFFF8466), // 7.27:1 on raised, 5.76:1 on a 16% danger tint
+    scrim: Color(0xB3000000), // black @ ~70%
   );
 
   @override
@@ -239,7 +302,10 @@ class ZTokens extends ThemeExtension<ZTokens> {
     Color? success,
     Color? successText,
     Color? warning,
+    Color? warningText,
     Color? danger,
+    Color? dangerText,
+    Color? scrim,
   }) {
     return ZTokens(
       surface: surface ?? this.surface,
@@ -259,7 +325,10 @@ class ZTokens extends ThemeExtension<ZTokens> {
       success: success ?? this.success,
       successText: successText ?? this.successText,
       warning: warning ?? this.warning,
+      warningText: warningText ?? this.warningText,
       danger: danger ?? this.danger,
+      dangerText: dangerText ?? this.dangerText,
+      scrim: scrim ?? this.scrim,
     );
   }
 
@@ -284,7 +353,10 @@ class ZTokens extends ThemeExtension<ZTokens> {
       success: Color.lerp(success, other.success, t)!,
       successText: Color.lerp(successText, other.successText, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
+      warningText: Color.lerp(warningText, other.warningText, t)!,
       danger: Color.lerp(danger, other.danger, t)!,
+      dangerText: Color.lerp(dangerText, other.dangerText, t)!,
+      scrim: Color.lerp(scrim, other.scrim, t)!,
     );
   }
 }
@@ -353,7 +425,7 @@ class ZType {
         weight: FontWeight.w500,
       ),
       bodySmall: _style(caption, height: 1.40, em: 0.006, color: tokens.textSecondary),
-      labelSmall: _style(micro, height: 1.45, em: 0.008, color: tokens.textTertiary),
+      labelSmall: _style(micro, height: 1.45, em: 0.008, color: tokens.textSecondary),
     );
     if (!arabic) return base;
     TextStyle? a(TextStyle? s) => s == null ? null : ZType.arabic(s);

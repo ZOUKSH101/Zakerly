@@ -135,7 +135,7 @@ void main() {
     expect(find.text('اشرحلي'), findsOneWidget);
     expect(find.text('هنذاكر إيه النهارده؟'), findsOneWidget);
     expect(find.text(ar.composerUsingFiles(1)), findsOneWidget);
-    expect(find.text('بستخدم ملف واحد. اختار الملفات من على الشمال.'), findsOneWidget);
+    expect(find.text('بستخدم ملف واحد. غيّرهم من الحالة.'), findsOneWidget);
 
     // Nothing from the English table leaks into the key labels.
     for (final english in [
@@ -201,6 +201,46 @@ void main() {
     expect(find.text('Pro'), findsOneWidget);
     expect(find.text('2 Canvas courses'), findsNothing);
     expect(find.text('مادتين من Canvas'), findsOneWidget);
+  });
+
+  testWidgets('switching to Arabic and back to English each take one tap, dialog stays open', (
+    tester,
+  ) async {
+    await setSize(tester, const Size(1440, 900));
+    final s = AppServices.demo();
+    addTearDown(s.scheduler.dispose);
+    final prefs = s.preferences;
+
+    // The same wiring as app.dart: the MaterialApp rebuilds on a language change.
+    await tester.pumpWidget(Services(
+      services: s,
+      child: ListenableBuilder(
+        listenable: prefs,
+        builder: (context, _) => MaterialApp(
+          theme: buildTheme(Brightness.light, arabic: prefs.language.isRtl),
+          locale: prefs.language.locale,
+          supportedLocales: [for (final l in AppLanguage.values) l.locale],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(onPressed: () => showSettingsDialog(context), child: const Text('open')),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('العربية'));
+    await tester.pumpAndSettle();
+    expect(prefs.language, AppLanguage.arabic);
+    expect(find.text(S.ar.appearance), findsOneWidget);
+
+    await tester.tap(find.text('English'));
+    await tester.pumpAndSettle();
+    expect(prefs.language, AppLanguage.english);
+    expect(find.text('Appearance'), findsOneWidget);
   });
 
   testWidgets('the tour speaks Arabic', (tester) async {
@@ -277,7 +317,7 @@ void main() {
     expect(S.ar.composerUsingFiles(2), startsWith('بستخدم ملفين'));
     expect(S.ar.composerUsingFiles(3), startsWith('بستخدم 3 ملفات'));
     expect(S.ar.composerUsingFiles(12), startsWith('بستخدم 12 ملف'));
-    expect(S.en.composerUsingFiles(1), 'Using 1 file. Pick files on the right.');
-    expect(S.en.composerUsingFiles(3), 'Using 3 files. Pick files on the right.');
+    expect(S.en.composerUsingFiles(1), 'Using 1 file. Change them in Status.');
+    expect(S.en.composerUsingFiles(3), 'Using 3 files. Change them in Status.');
   });
 }

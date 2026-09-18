@@ -94,7 +94,9 @@ class _ZComposerState extends State<ZComposer> {
     return AnimatedContainer(
       duration: ZMotion.medium,
       curve: ZMotion.standard,
-      padding: const EdgeInsetsDirectional.fromSTEB(ZSpace.s20, ZSpace.s8, ZSpace.s8, ZSpace.s8),
+      // The send button's 44px hit area overhangs its 36px circle by 4px on
+      // each side, so the outer padding is 4px tighter to keep the look.
+      padding: const EdgeInsetsDirectional.fromSTEB(ZSpace.s20, ZSpace.s4, ZSpace.s4, ZSpace.s4),
       decoration: BoxDecoration(
         color: z.raised,
         borderRadius: BorderRadius.circular(ZRadius.xl),
@@ -132,8 +134,8 @@ class _ZComposerState extends State<ZComposer> {
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,
                     disabledBorder: InputBorder.none,
-                    // Centres one line of 15/1.4 text on the 36px buttons.
-                    contentPadding: const EdgeInsets.symmetric(vertical: 7.5),
+                    // Centres one line of 15/1.4 text on the 44px hit areas.
+                    contentPadding: const EdgeInsets.symmetric(vertical: 11.5),
                   ),
                 ),
               ),
@@ -141,9 +143,9 @@ class _ZComposerState extends State<ZComposer> {
           ),
           for (final a in widget.actions) ...[
             const SizedBox(width: ZSpace.s4),
-            SizedBox(height: 36, child: Center(child: a)),
+            SizedBox(height: _SendButton.hitSize, child: Center(child: a)),
           ],
-          const SizedBox(width: ZSpace.s8),
+          const SizedBox(width: ZSpace.s4),
           _SendButton(
             enabled: widget.canSend,
             tooltip: widget.sendTooltip ?? S.of(context).send,
@@ -162,6 +164,10 @@ class _SendButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onPressed;
 
+  /// Tappable area; the visible circle is [_visualSize].
+  static const double hitSize = 44;
+  static const double _visualSize = 36;
+
   @override
   Widget build(BuildContext context) {
     final z = context.z;
@@ -170,19 +176,24 @@ class _SendButton extends StatelessWidget {
       child: Pressable(
         onTap: enabled ? onPressed : null,
         semanticLabel: tooltip,
-        child: AnimatedContainer(
-          duration: ZMotion.medium,
-          curve: ZMotion.standard,
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: enabled ? z.accent : z.raised2,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.arrow_upward_rounded,
-            size: ZIcon.lg,
-            color: enabled ? z.onAccent : z.textTertiary,
+        child: SizedBox.square(
+          dimension: hitSize,
+          child: Center(
+            child: AnimatedContainer(
+              duration: ZMotion.medium,
+              curve: ZMotion.standard,
+              width: _visualSize,
+              height: _visualSize,
+              decoration: BoxDecoration(
+                color: enabled ? z.accent : z.raised2,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.arrow_upward_rounded,
+                size: ZIcon.lg,
+                color: enabled ? z.onAccent : z.textTertiary,
+              ),
+            ),
           ),
         ),
       ),

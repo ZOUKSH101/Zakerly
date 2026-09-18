@@ -36,6 +36,13 @@ class TutorService extends ChangeNotifier {
 
   List<ChatMessage> thread(String courseId) => _threads.putIfAbsent(courseId, () => []);
 
+  /// Forgets every conversation (on sign-out, so the next person on this
+  /// device starts clean).
+  void clearThreads() {
+    _threads.clear();
+    notifyListeners();
+  }
+
   // "Sum up the main ideas", "quiz me on this week" and friends name no
   // specific term, so keyword retrieval finds nothing. Those get an overview
   // instead: the opening sections of each selected file.

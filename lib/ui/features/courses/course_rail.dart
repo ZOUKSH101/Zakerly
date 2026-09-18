@@ -20,9 +20,13 @@ import 'course_sync.dart';
 /// confirmation, then automatically starts getting ready whichever courses
 /// the plan still allows. Picking an unstarted course does the same.
 class CourseRail extends StatefulWidget {
-  const CourseRail({super.key, required this.onOpenSettings});
+  const CourseRail({super.key, required this.onOpenSettings, this.onCourseSelected});
 
   final VoidCallback onOpenSettings;
+
+  /// Called after a course is picked (also when it was already selected).
+  /// On phones the workspace uses it to switch to the chat tab.
+  final VoidCallback? onCourseSelected;
 
   @override
   State<CourseRail> createState() => _CourseRailState();
@@ -61,7 +65,7 @@ class _CourseRailState extends State<CourseRail> {
     _seenSync = last;
     setState(() => _justSynced = true);
     _confirmTimer?.cancel();
-    _confirmTimer = Timer(const Duration(milliseconds: 1600), () {
+    _confirmTimer = Timer(ZMotion.confirm, () {
       if (mounted) setState(() => _justSynced = false);
     });
   }
@@ -73,6 +77,7 @@ class _CourseRailState extends State<CourseRail> {
     if (!course.hasStarted && s.ingestion.canIndex(course)) {
       s.ingestion.indexCourse(course);
     }
+    widget.onCourseSelected?.call();
   }
 
   @override
@@ -117,8 +122,13 @@ class _CourseRailState extends State<CourseRail> {
 
   Widget _buildBrandHeader(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.fromLTRB(ZSpace.s20, ZSpace.s20, ZSpace.s20, ZSpace.s12),
-      child: ZLogo(size: 28, withWordmark: true),
+      padding: EdgeInsets.fromLTRB(
+        ZLayout.panelPadding,
+        ZLayout.panelPadding,
+        ZLayout.panelPadding,
+        ZSpace.s12,
+      ),
+      child: ZLogo(size: ZLayout.railLogoSize, withWordmark: true),
     );
   }
 
@@ -126,7 +136,7 @@ class _CourseRailState extends State<CourseRail> {
     final z = context.z;
     final t = S.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: ZSpace.s20),
+      padding: const EdgeInsets.symmetric(horizontal: ZLayout.panelPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -185,11 +195,23 @@ class _CourseRailState extends State<CourseRail> {
             const SizedBox(height: ZSpace.s4),
             Tooltip(
               message: t.syncFailed,
-              child: Text(
-                t.syncFailed,
-                style: context.type.bodySmall?.copyWith(color: z.danger),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: ZLayout.nudge),
+                    child: Icon(Icons.error_outline_rounded, size: ZIcon.sm, color: z.danger),
+                  ),
+                  const SizedBox(width: ZSpace.s4),
+                  Expanded(
+                    child: Text(
+                      t.syncFailed,
+                      style: context.type.bodySmall?.copyWith(color: z.danger),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -213,13 +235,14 @@ class _CourseRailState extends State<CourseRail> {
     final selectedId = s.session.courseId;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: ZSpace.s20),
+      padding: const EdgeInsets.symmetric(horizontal: ZLayout.panelPadding),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          const tileExtent = 76.0;
-          const moreRowExtent = 24.0;
-          final maxTiles =
-              ((constraints.maxHeight - moreRowExtent) / tileExtent).floor().clamp(1, 6).toInt();
+          final maxTiles = ((constraints.maxHeight - ZLayout.moreRowExtent) /
+                  ZLayout.courseTileExtent)
+              .floor()
+              .clamp(1, ZLayout.maxCourseTiles)
+              .toInt();
           final shown = courses.take(maxTiles).toList();
           final remaining = courses.length - shown.length;
 
@@ -251,20 +274,17 @@ class _CourseRailState extends State<CourseRail> {
     final z = context.z;
     final t = S.of(context);
     final user = s.auth.user.value;
-    final initial = (user != null && user.name.isNotEmpty) ? user.name[0].toUpperCase() : '?';
     final isPro = s.budget.tier != PlanTier.free;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(ZSpace.s20, ZSpace.s12, ZSpace.s20, ZSpace.s16),
+      padding: const EdgeInsets.fromLTRB(
+        ZLayout.panelPadding,
+        ZSpace.s12,
+        ZLayout.panelPadding,
+        ZSpace.s16,
+      ),
       child: Row(
         children: [
-          Container(
-            width: ZSpace.s24 + ZSpace.s4,
-            height: ZSpace.s24 + ZSpace.s4,
-            decoration: BoxDecoration(color: z.accentSoft, shape: BoxShape.circle),
-            child: Center(
-              child: Text(initial, style: context.type.labelLarge?.copyWith(color: z.accent)),
-            ),
-          ),
+          ZAvatar(name: user?.name ?? ''),
           const SizedBox(width: ZSpace.s8),
           Expanded(
             child: Text(
@@ -381,11 +401,11 @@ class _CourseTile extends StatelessWidget {
                     // turns Mint, and the amber spark hops off its top.
                     ZSpark(
                       fired: ready,
-                      size: 7,
+                      size: ZLayout.courseSparkSize,
                       child: ZRing(
                         fraction: fraction,
-                        size: 24,
-                        stroke: 3,
+                        size: ZLayout.courseRingSize,
+                        stroke: ZLayout.courseRingStroke,
                         color: ready ? z.success : z.accent,
                       ),
                     ),

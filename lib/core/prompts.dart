@@ -1,4 +1,5 @@
-﻿import 'models.dart';
+﻿import 'animations.dart';
+import 'models.dart';
 import 'preferences.dart';
 
 /// Prompt templates. These are written for the real model; the mock parses
@@ -61,7 +62,37 @@ class Prompts {
     return b.toString();
   }
 
-  static const animationSystem =
+  /// The animation system prompt for the app's [language] and [theme]: the
+  /// document must use the app's words and direction and the app's colours
+  /// (not the OS colour scheme), and speak the [AnimationMessages] protocol.
+  static String animationSystemFor({
+    AppLanguage language = AppLanguage.english,
+    AnimationTheme theme = AnimationTheme.light,
+  }) {
+    final copy = AnimationCopy.of(language);
+    final palette = AnimationPalette.of(theme);
+    final arabic = language == AppLanguage.arabic;
+    final lang = arabic
+        ? 'LANGUAGE: ARABIC. Set <html lang="ar" dir="rtl">. Write the title, captions and all '
+            'labels in friendly Egyptian-leaning Modern Standard Arabic; keep English course terms '
+            'in English and use Western digits. In right-to-left, the Left arrow key goes to the '
+            'next step and the Right arrow key goes back. '
+        : 'LANGUAGE: ENGLISH. Set <html lang="en" dir="ltr">. ';
+    final controls = 'Label the controls exactly "${copy.back}", "${copy.play}" (and '
+        '"${copy.pause}" while playing) and "${copy.next}", and write the counter as '
+        '"${copy.stepTemplate.replaceAll('{i}', 'X').replaceAll('{n}', 'Y')}". ';
+    final colors = 'THEME: ${theme.name.toUpperCase()}. Use exactly this palette and do NOT '
+        'use a prefers-color-scheme media query: ${palette.describe}. ';
+    const protocol = 'Listen for window "message" events: the string '
+        '"${AnimationMessages.back}" goes back one step, "${AnimationMessages.next}" goes '
+        'forward one step, "${AnimationMessages.toggle}" toggles Play/Pause. When playback '
+        'starts or stops, call parent.postMessage("${AnimationMessages.playing}", "*") or '
+        'parent.postMessage("${AnimationMessages.paused}", "*"). When Escape is pressed, call '
+        'parent.postMessage("${AnimationMessages.escape}", "*"). ';
+    return '$_animationBase$lang$controls$colors$protocol$_animationTail';
+  }
+
+  static const _animationBase =
       'You create short educational animations as ONE self-contained HTML document. '
       'Output only the document, starting with <!doctype html>. '
       'Inline all CSS and JavaScript inside the document. Do not reference any external '
@@ -70,20 +101,28 @@ class Prompts {
       'an SVG, give it a viewBox, width and height at 100%, and preserveAspectRatio; size all '
       'text with clamp() or vmin units, never a fixed pixel size that stays small in a big frame. '
       'Break the explanation into a sequence of steps. Provide visible controls: a Back button, '
-      'a Play/Pause button, a Next button, and a step counter reading "Step X of Y". Show one '
+      'a Play/Pause button, a Next button, and a step counter. Show one '
       'short caption per step describing what just happened. Wire the left and right arrow keys '
       'to Back and Next, and Space to Play/Pause. Wait for the student to press Next by default; '
       'only advance automatically while Play is active. '
       'Respect prefers-reduced-motion by removing transitions and jumping straight to each step, '
-      'still under the student\'s step control. '
-      'Support both light and dark mode with a prefers-color-scheme media query. Use #C2255C (light) / #D6336C (dark) as '
-      'the accent color and a plain system font stack. '
+      'still under the student\'s step control. Use a plain system font stack. ';
+
+  static const _animationTail =
       'Keep the writing calm and plain: short sentences, no buzzwords, and never use an em dash '
       'or en dash character. Every fact and label must come from the provided course context. '
       'Keep the whole document under 30KB.';
 
-  static String animation(String concept, List<Chunk> context) {
-    final b = StringBuffer('CONCEPT: $concept\n<<CONTEXT>>\n');
+  static String animation(
+    String concept,
+    List<Chunk> context, {
+    AppLanguage language = AppLanguage.english,
+    AnimationTheme theme = AnimationTheme.light,
+  }) {
+    // The LANGUAGE/THEME lines repeat the system prompt's choice so the mock
+    // model (which only parses the prompt) draws the same look.
+    final b = StringBuffer('LANGUAGE: ${language.code}\nTHEME: ${theme.name}\n'
+        'CONCEPT: $concept\n<<CONTEXT>>\n');
     for (final c in context) {
       b.writeln('[[source: ${c.fileName} | ${c.heading}]]');
       b.writeln(c.text);

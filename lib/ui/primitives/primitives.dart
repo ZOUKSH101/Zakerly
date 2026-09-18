@@ -24,3 +24,7 @@ export 'spinner.dart';
 export 'switch_row.dart';
 export 'text_field.dart';
 export 'typing_dots.dart';
+export 'avatar.dart';
+export 'status_dot.dart';
+export 'note_banner.dart';
+export 'cite_mark.dart';

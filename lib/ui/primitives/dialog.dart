@@ -5,47 +5,64 @@ import '../theme.dart';
 import 'icon_button.dart';
 
 /// Shows a dialog whose entrance scales 0.8333 -> 1.0 with the overshoot
-/// curve over [ZMotion.enter] (500ms), and whose exit visually completes in
-/// ~150ms (the first 30% of that same duration) scaling 1.0 -> 1.2 while
-/// fading out. Barrier is black @ 45%.
+/// curve over [ZMotion.enter] (500ms), and whose exit takes [ZMotion.exit]
+/// (150ms), scaling 1.0 -> 1.2 while fading out. With reduced motion the
+/// dialog simply fades, with no scale or overshoot. Barrier is black @ 45%.
 Future<T?> showZDialog<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   bool dismissible = true,
 }) {
-  return showGeneralDialog<T>(
-    context: context,
-    barrierDismissible: dismissible,
-    barrierColor: const Color(0x73000000), // black @ 45%
-    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    transitionDuration: ZMotion.enter,
-    pageBuilder: (context, animation, secondaryAnimation) => builder(context),
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: ZMotion.overshoot,
-        // Reverse finishes within the first 30% of the duration (~150ms of
-        // the 500ms transitionDuration), giving a fast, simple exit.
-        reverseCurve: const Interval(0.7, 1.0, curve: Curves.easeIn),
-      );
-      return AnimatedBuilder(
-        animation: curved,
-        builder: (context, _) {
-          final reversing = animation.status == AnimationStatus.reverse;
-          final v = curved.value;
-          final scale = reversing ? (1.0 + 0.2 * (1 - v)) : (0.8333 + 0.1667 * v);
-          return Opacity(
-            opacity: v.clamp(0.0, 1.0),
-            child: Transform.scale(scale: scale, child: child),
-          );
-        },
-        child: child,
-      );
-    },
+  final reduced = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+  return Navigator.of(context, rootNavigator: true).push<T>(
+    _ZDialogRoute<T>(
+      barrierDismissible: dismissible,
+      barrierColor: const Color(0x73000000), // black @ 45%
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      transitionDuration: reduced ? ZMotion.exit : ZMotion.enter,
+      pageBuilder: (context, animation, secondaryAnimation) => builder(context),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        if (reduced) return FadeTransition(opacity: animation, child: child);
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: ZMotion.overshoot,
+          reverseCurve: ZMotion.exitCurve,
+        );
+        return AnimatedBuilder(
+          animation: curved,
+          builder: (context, _) {
+            final reversing = animation.status == AnimationStatus.reverse;
+            final v = curved.value;
+            final scale = reversing ? (1.0 + 0.2 * (1 - v)) : (0.8333 + 0.1667 * v);
+            return Opacity(
+              opacity: v.clamp(0.0, 1.0),
+              child: Transform.scale(scale: scale, child: child),
+            );
+          },
+          child: child,
+        );
+      },
+    ),
   );
 }
 
-/// Standard dialog shell: raised background, xl radius, header row with
+/// A [RawDialogRoute] whose exit lasts [ZMotion.exit], so the route stops
+/// blocking input as soon as its content is gone.
+class _ZDialogRoute<T> extends RawDialogRoute<T> {
+  _ZDialogRoute({
+    required super.pageBuilder,
+    super.barrierDismissible,
+    super.barrierColor,
+    super.barrierLabel,
+    super.transitionDuration,
+    super.transitionBuilder,
+  });
+
+  @override
+  Duration get reverseTransitionDuration => ZMotion.exit;
+}
+
+/// Standard dialog shell:raised background, xl radius, header row with
 /// title (+ optional subtitle) and a close button, a hairline divider, then
 /// the body and optional trailing actions.
 class ZDialogFrame extends StatelessWidget {
