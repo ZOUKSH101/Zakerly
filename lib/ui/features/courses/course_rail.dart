@@ -1,27 +1,69 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/app_services.dart';
 import '../../../core/budget.dart';
 import '../../../core/models.dart';
 import '../../primitives/primitives.dart';
+import '../tutorial/tutorial_targets.dart';
 
-/// LEFT column of the one-screen workspace: brand header, Canvas sync
+/// LEFT column of the one-screen workspace: brand mark, Canvas sync
 /// controls and the course list, with the signed-in user pinned at the
 /// bottom. Meant to be placed by the integrator at 248-272px wide, full
 /// viewport height. Never scrolls; the course list caps itself to whatever
 /// fits the available height (at most 6 tiles).
-class CourseRail extends StatelessWidget {
+///
+/// Syncing shows a spinner on the Sync button, then a brief "Synced"
+/// confirmation, then automatically starts getting ready whichever courses
+/// the plan still allows. Picking an unstarted course does the same.
+class CourseRail extends StatefulWidget {
   const CourseRail({super.key, required this.onOpenSettings});
 
   final VoidCallback onOpenSettings;
 
+  @override
+  State<CourseRail> createState() => _CourseRailState();
+}
+
+class _CourseRailState extends State<CourseRail> {
+  bool _justSynced = false;
+  Timer? _confirmTimer;
+
+  @override
+  void dispose() {
+    _confirmTimer?.cancel();
+    super.dispose();
+  }
+
   Future<void> _handleSync(AppServices s) async {
     await s.courses.sync();
+    if (!mounted) return;
     final courses = s.courses.courses;
     if (courses.isEmpty) return;
+
     final current = s.session.courseId;
     if (current == null || s.courses.byId(current) == null) {
       s.session.selectCourse(courses.first.id);
+    }
+
+    setState(() => _justSynced = true);
+    _confirmTimer?.cancel();
+    _confirmTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _justSynced = false);
+    });
+
+    for (final course in courses) {
+      if (!course.hasStarted && s.ingestion.canIndex(course)) {
+        s.ingestion.indexCourse(course);
+      }
+    }
+  }
+
+  void _selectCourse(AppServices s, Course course) {
+    s.session.selectCourse(course.id);
+    if (!course.hasStarted && s.ingestion.canIndex(course)) {
+      s.ingestion.indexCourse(course);
     }
   }
 
@@ -54,12 +96,13 @@ class CourseRail extends StatelessWidget {
             ),
           ),
           Expanded(
+            key: TutorialTargets.courses,
             child: ListenableBuilder(
               listenable: Listenable.merge([s.courses, s.session, s.budget]),
               builder: (context, _) => _buildCourseList(context, s),
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: z.hairline),
           ListenableBuilder(
             listenable: Listenable.merge([s.budget, s.auth.user]),
             builder: (context, _) => _buildFooter(context, s),
@@ -70,47 +113,54 @@ class CourseRail extends StatelessWidget {
   }
 
   Widget _buildBrandHeader(BuildContext context) {
-    final z = context.z;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(ZSpace.s16, ZSpace.s16, ZSpace.s16, ZSpace.s12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.baseline,
-        textBaseline: TextBaseline.alphabetic,
-        children: [
-          Text('Zakerly', style: context.type.titleLarge),
-          const SizedBox(width: ZSpace.s8),
-          Text(
-            'ذاكرلي',
-            style: context.type.bodySmall?.copyWith(color: z.accent),
-          ),
-        ],
-      ),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(ZSpace.s20, ZSpace.s20, ZSpace.s20, ZSpace.s12),
+      child: ZLogo(size: 28, withWordmark: true),
     );
   }
 
   Widget _buildCanvasSection(BuildContext context, AppServices s) {
     final z = context.z;
-    final syncedCaption =
-        s.courses.lastSynced != null ? 'Synced ${_formatTime(s.courses.lastSynced!)}' : 'Not synced yet';
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: ZSpace.s16),
+      padding: const EdgeInsets.symmetric(horizontal: ZSpace.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ZEyebrow('CANVAS'),
+          const ZEyebrow('Canvas'),
           const SizedBox(height: ZSpace.s8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                  s.lms.host,
-                  style: context.type.bodyMedium,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+                child: AnimatedSwitcher(
+                  duration: ZMotion.medium,
+                  child: _justSynced
+                      ? Row(
+                          key: const ValueKey('synced'),
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle, size: ZIcon.sm, color: z.success),
+                            const SizedBox(width: ZSpace.s4),
+                            Text(
+                              'Synced',
+                              style: context.type.bodySmall?.copyWith(color: z.successText),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          s.courses.lastSynced != null
+                              ? '${s.lms.host} · Synced ${_formatTime(s.courses.lastSynced!)}'
+                              : 'Not synced yet',
+                          key: const ValueKey('caption'),
+                          style: context.type.bodySmall?.copyWith(color: z.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                 ),
               ),
               const SizedBox(width: ZSpace.s8),
               ZButton(
+                key: TutorialTargets.sync,
                 label: 'Sync',
                 size: ZButtonSize.sm,
                 variant: ZButtonVariant.tonal,
@@ -119,11 +169,6 @@ class CourseRail extends StatelessWidget {
                 onPressed: () => _handleSync(s),
               ),
             ],
-          ),
-          const SizedBox(height: ZSpace.s4),
-          Text(
-            syncedCaption,
-            style: context.type.bodySmall?.copyWith(color: z.textSecondary),
           ),
           if (s.courses.error != null) ...[
             const SizedBox(height: ZSpace.s4),
@@ -137,7 +182,7 @@ class CourseRail extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: ZSpace.s12),
+          const SizedBox(height: ZSpace.s16),
         ],
       ),
     );
@@ -149,17 +194,17 @@ class CourseRail extends StatelessWidget {
       return const ZEmpty(
         icon: Icons.cloud_sync_outlined,
         title: 'No courses yet',
-        message: 'Tap Sync above to pull them in from Canvas.',
+        message: 'Tap Sync above to bring them in from Canvas.',
       );
     }
 
     final selectedId = s.session.courseId;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: ZSpace.s16),
+      padding: const EdgeInsets.symmetric(horizontal: ZSpace.s20),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          const tileExtent = 68.0;
+          const tileExtent = 76.0;
           const moreRowExtent = 24.0;
           final maxTiles =
               ((constraints.maxHeight - moreRowExtent) / tileExtent).floor().clamp(1, 6).toInt();
@@ -176,6 +221,7 @@ class CourseRail extends StatelessWidget {
                   index: i,
                   selected: shown[i].id == selectedId,
                   s: s,
+                  onSelect: _selectCourse,
                 ),
               if (remaining > 0)
                 Text(
@@ -195,7 +241,7 @@ class CourseRail extends StatelessWidget {
     final initial = (user != null && user.name.isNotEmpty) ? user.name[0].toUpperCase() : '?';
     final isPro = s.budget.tier != PlanTier.free;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(ZSpace.s16, ZSpace.s12, ZSpace.s16, ZSpace.s12),
+      padding: const EdgeInsets.fromLTRB(ZSpace.s20, ZSpace.s12, ZSpace.s20, ZSpace.s16),
       child: Row(
         children: [
           Container(
@@ -222,9 +268,10 @@ class CourseRail extends StatelessWidget {
           ),
           const SizedBox(width: ZSpace.s4),
           ZIconButton(
+            key: TutorialTargets.settings,
             icon: Icons.tune,
             tooltip: 'Settings',
-            onPressed: onOpenSettings,
+            onPressed: widget.onOpenSettings,
           ),
         ],
       ),
@@ -239,12 +286,14 @@ class _CourseTile extends StatelessWidget {
     required this.index,
     required this.selected,
     required this.s,
+    required this.onSelect,
   });
 
   final Course course;
   final int index;
   final bool selected;
   final AppServices s;
+  final void Function(AppServices s, Course course) onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -260,17 +309,12 @@ class _CourseTile extends StatelessWidget {
     Widget? trailing;
 
     if (course.hasPendingWork) {
-      statusText = 'Indexing…';
+      statusText = 'Getting ready…';
       trailing = const ZSpinner(size: 16);
     } else if (course.isFullyIndexed) {
       statusText = 'Ready';
     } else if (!course.hasStarted && canIndex) {
-      statusText = 'Not indexed';
-      trailing = ZIconButton(
-        icon: Icons.playlist_add,
-        tooltip: 'Index ${course.name}',
-        onPressed: () => s.ingestion.indexCourse(course),
-      );
+      statusText = 'Not started';
     } else if (!course.hasStarted) {
       statusText = 'Locked';
       trailing = const ZBadge(
@@ -282,7 +326,7 @@ class _CourseTile extends StatelessWidget {
       statusText = '$failed failed';
       statusColor = z.danger;
     } else {
-      statusText = '$ready/$total indexed';
+      statusText = '$ready/$total ready';
     }
 
     final lockedSuffix = (!course.hasStarted && !canIndex)
@@ -295,77 +339,69 @@ class _CourseTile extends StatelessWidget {
       index: index,
       child: Padding(
         padding: const EdgeInsets.only(bottom: ZSpace.s8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Semantics(
-                container: true,
-                button: true,
-                selected: selected,
-                label: semanticsLabel,
-                child: Pressable(
-                  onTap: () => s.session.selectCourse(course.id),
-                  child: ExcludeSemantics(
-                    child: AnimatedContainer(
-                      duration: ZMotion.medium,
-                      curve: ZMotion.standard,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: ZSpace.s12,
-                        vertical: ZSpace.s8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selected ? z.accentSoft : Colors.transparent,
-                        borderRadius: BorderRadius.circular(ZRadius.md),
-                        border: Border.all(color: selected ? z.accent : Colors.transparent),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+        child: Semantics(
+          container: true,
+          button: true,
+          selected: selected,
+          label: semanticsLabel,
+          child: Pressable(
+            onTap: () => onSelect(s, course),
+            child: ExcludeSemantics(
+              child: AnimatedContainer(
+                duration: ZMotion.medium,
+                curve: ZMotion.standard,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: ZSpace.s16,
+                  vertical: ZSpace.s12,
+                ),
+                decoration: BoxDecoration(
+                  color: selected ? z.accentSoft : Colors.transparent,
+                  borderRadius: BorderRadius.circular(ZRadius.md),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    ZRing(fraction: fraction, size: 24, stroke: 3),
+                    const SizedBox(width: ZSpace.s12),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ZRing(fraction: fraction, size: 24, stroke: 3),
-                          const SizedBox(width: ZSpace.s12),
-                          Expanded(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          Text(
+                            course.name,
+                            style: context.type.bodyLarge?.copyWith(color: z.text),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text.rich(
+                            TextSpan(
+                              style: context.type.bodySmall?.copyWith(color: z.textSecondary),
                               children: [
-                                Text(
-                                  course.name,
-                                  style: context.type.bodyLarge?.copyWith(color: z.text),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text.rich(
-                                  TextSpan(
-                                    style: context.type.bodySmall?.copyWith(color: z.textSecondary),
-                                    children: [
-                                      TextSpan(text: '${course.code} · '),
-                                      TextSpan(
-                                        text: statusText,
-                                        style: statusColor != null
-                                            ? TextStyle(color: statusColor)
-                                            : null,
-                                      ),
-                                    ],
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                TextSpan(text: '${course.code} · '),
+                                TextSpan(
+                                  text: statusText,
+                                  style: statusColor != null
+                                      ? TextStyle(color: statusColor)
+                                      : null,
                                 ),
                               ],
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
-                  ),
+                    if (trailing != null) ...[
+                      const SizedBox(width: ZSpace.s8),
+                      trailing,
+                    ],
+                  ],
                 ),
               ),
             ),
-            if (trailing != null) ...[
-              const SizedBox(width: ZSpace.s8),
-              trailing,
-            ],
-          ],
+          ),
         ),
       ),
     );

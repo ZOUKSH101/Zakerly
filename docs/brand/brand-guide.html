@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zakerly Brand Guide</title>
+<meta name="description" content="Zakerly (ذاكرلي) brand identity: logo, color, type, voice and the app in brand.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23C2255C'/%3E%3Cpath d='M17 23H37L19 44H45' fill='none' stroke='%23fff' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='48' cy='16' r='5' fill='%23FFB224'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --surface:#F7F5F3; --raised:#FFFFFF; --raised2:#EFEBE8; --hairline:rgb(0 0 0 / .08);
+  --text:#1F1A1C; --text2:#6B6266; --text3:#8C8387;
+  --accent:#C2255C; --on-accent:#FFFFFF; --accent-text:#C2255C; --accent-soft:rgb(194 37 92 / .10);
+  --spark:#FFB224; --on-spark:#1F1A1C; --spark-text:#8A5300;
+  --success:#1E8E5A; --success-text:#17774B; --danger:#C4320A;
+  --shadow:0 6px 16px rgb(0 0 0 / .08), 0 1px 2px rgb(0 0 0 / .04);
+  --decel:cubic-bezier(0,0,.5,1); --over:cubic-bezier(.3,2,.5,1);
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --surface:#0E0C0D; --raised:#1C191A; --raised2:#2A2628; --hairline:rgb(255 255 255 / .14);
+    --text:#F6F2F3; --text2:#ABA3A6; --text3:#7A7275;
+    --accent:#D6336C; --accent-text:#FF7AA2; --accent-soft:rgb(214 51 108 / .18);
+    --spark-text:#FFB224; --success:#3DD68C; --success-text:#3DD68C; --danger:#FF6B4A;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --surface:#0E0C0D; --raised:#1C191A; --raised2:#2A2628; --hairline:rgb(255 255 255 / .14);
+  --text:#F6F2F3; --text2:#ABA3A6; --text3:#7A7275;
+  --accent:#D6336C; --accent-text:#FF7AA2; --accent-soft:rgb(214 51 108 / .18);
+  --spark-text:#FFB224; --success:#3DD68C; --success-text:#3DD68C; --danger:#FF6B4A;
+  --shadow:none;
+}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--surface);color:var(--text);font:400 16px/1.5 "Readex Pro",system-ui,sans-serif;letter-spacing:.002em;overflow-x:hidden}
+[lang="ar"],.ar{letter-spacing:0!important;line-height:1.65}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px}
+@media (min-width:720px){.wrap{padding-inline:40px}}
+section{padding:88px 0;border-top:1px solid var(--hairline)}
+.eyebrow{font-size:13px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text);margin-bottom:12px}
+h2{font-size:clamp(30px,5vw,44px);font-weight:600;line-height:1.08;letter-spacing:-.012em;max-width:18ch}
+.lede{color:var(--text2);font-size:18px;line-height:1.5;max-width:56ch;margin-top:16px}
+.card{background:var(--raised);border-radius:18px;box-shadow:var(--shadow);border:1px solid var(--hairline)}
+.grid{display:grid;gap:16px}
+
+/* Hero */
+.hero{padding:96px 0 88px;border-top:0;text-align:center}
+.hero .mark{width:clamp(112px,22vw,168px);height:auto;display:block;margin:0 auto 36px}
+.hero h1{font-size:clamp(44px,9vw,88px);font-weight:600;letter-spacing:-.02em;line-height:1}
+.hero h1 .ar{display:block;font-weight:500;color:var(--text2);font-size:.52em;margin-top:14px;line-height:1.4}
+.hero p{font-size:clamp(19px,2.6vw,24px);line-height:1.4;color:var(--text2);max-width:30ch;margin:28px auto 0}
+.hero p b{color:var(--text);font-weight:500}
+
+/* Mark draw-on */
+.z{stroke-dasharray:74;stroke-dashoffset:74;animation:draw .6s var(--decel) .2s forwards}
+.spark{transform-box:fill-box;transform-origin:center;transform:scale(0);animation:pop .36s var(--over) .72s forwards}
+.tile{transform-box:fill-box;transform-origin:center;opacity:0;animation:tile .5s var(--decel) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pop{to{transform:scale(1)}}
+@keyframes tile{from{opacity:0;transform:scale(.8333)}to{opacity:1;transform:scale(1)}}
+.replay{margin-top:28px;background:none;border:1px solid var(--hairline);color:var(--text2);font:inherit;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer}
+.replay:hover{color:var(--text)}
+
+/* Logo section */
+.logo-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));margin-top:48px}
+.logo-tile{padding:40px 24px;display:flex;flex-direction:column;align-items:center;gap:20px;min-height:220px;justify-content:center}
+.logo-tile.on-light{background:#FFFFFF;color:#6B6266}
+.logo-tile.on-dark{background:#0E0C0D;color:#ABA3A6;border-color:#2A2628}
+.logo-tile small{font-size:12px}
+.lockup{display:flex;align-items:center;gap:16px}
+.lockup svg{width:64px;height:64px;flex:none}
+.lockup .en{font-size:30px;font-weight:600;letter-spacing:-.01em;line-height:1.05}
+.lockup .ar{font-size:19px;font-weight:500;color:var(--text2);line-height:1.5}
+.spec{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));margin-top:16px}
+.spec .card{padding:24px}
+.spec h3{font-size:17px;font-weight:600;margin-bottom:8px}
+.spec p,.spec li{color:var(--text2);font-size:15px;line-height:1.5}
+.spec ul{padding-left:18px}
+.construct{width:100%;max-width:260px;display:block;margin:8px auto 0}
+
+/* Color */
+.swatches{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));margin-top:48px}
+.sw{overflow:hidden}
+.sw .chips{display:grid;grid-template-columns:1fr 1fr;height:120px}
+.sw .chips div{display:flex;align-items:flex-end;padding:10px 12px;font-size:12px;font-weight:500}
+.sw .meta{padding:16px 18px 18px}
+.sw h3{font-size:17px;font-weight:600}
+.sw .role{color:var(--text2);font-size:13px}
+.sw .hex{font-size:13px;margin-top:10px;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;color:var(--text2)}
+.sw .hex b{font-weight:500;color:var(--text);font-variant-numeric:tabular-nums}
+.neutrals{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px;margin-top:16px}
+.neutrals .n{border-radius:12px;padding:14px;font-size:12px;border:1px solid var(--hairline)}
+.ratio{display:inline-block;margin-top:10px;font-size:12px;padding:3px 8px;border-radius:999px;background:var(--raised2);color:var(--text2)}
+
+/* Type */
+.type-hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;margin-top:48px}
+.type-hero .card{padding:32px}
+.glyphs{font-size:clamp(88px,14vw,140px);font-weight:600;line-height:1;letter-spacing:-.03em}
+.glyphs.ar{letter-spacing:0;line-height:1.2}
+.weights{display:flex;gap:16px;flex-wrap:wrap;margin-top:18px;color:var(--text2);font-size:15px}
+.scale{margin-top:16px;padding:8px 0}
+.row{display:grid;grid-template-columns:110px 1fr 1fr;gap:16px;align-items:baseline;padding:14px 24px;border-top:1px solid var(--hairline)}
+.row:first-child{border-top:0}
+.row .tok{font-size:12px;color:var(--text3)}
+@media (max-width:680px){.row{grid-template-columns:1fr}.row .ar{text-align:right}}
+
+/* Voice */
+.voice{margin-top:48px;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+.v{padding:24px}
+.v .where{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.v .before{margin-top:12px;color:var(--text3);text-decoration:line-through;text-decoration-color:var(--text3);font-size:15px}
+.v .after{margin-top:10px;font-size:19px;font-weight:500;line-height:1.35}
+.v .after.ar{font-size:18px;color:var(--text2);font-weight:400;margin-top:6px}
+.rules{margin-top:16px;padding:24px 24px 24px 44px;color:var(--text2);font-size:15px;columns:2 280px;column-gap:40px}
+.rules li{margin-bottom:8px;break-inside:avoid}
+.rules b{color:var(--text);font-weight:500}
+
+/* App mock */
+.mocks{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:24px;margin-top:48px}
+.app{border-radius:22px;overflow:hidden;background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--shadow)}
+.bar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--raised);border-bottom:1px solid var(--hairline)}
+.bar .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px;letter-spacing:-.01em}
+.bar .brand svg{width:28px;height:28px}
+.streak{display:flex;align-items:center;gap:6px;background:var(--raised2);border-radius:999px;padding:4px 10px 4px 8px;font-size:13px;font-weight:500}
+.streak i{width:10px;height:10px;border-radius:50%;background:var(--spark);display:block}
+.course{display:flex;align-items:center;gap:10px;padding:14px 18px 4px}
+.course .pill{font-size:13px;font-weight:500;background:var(--accent-soft);color:var(--accent-text);padding:5px 12px;border-radius:999px}
+.ring{width:18px;height:18px}
+.modes{display:flex;margin:12px 18px 4px;background:var(--raised2);border-radius:12px;padding:3px}
+.modes span{flex:1;text-align:center;font-size:13px;font-weight:500;padding:7px 4px;border-radius:9px;color:var(--text2)}
+.modes span.on{background:var(--raised);color:var(--text);box-shadow:var(--shadow)}
+.chat{padding:14px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.b{max-width:86%;padding:11px 14px;font-size:15px;line-height:1.45;border-radius:16px}
+.b.me{align-self:flex-end;background:var(--accent);color:var(--on-accent);border-end-end-radius:8px}
+.b.bot{align-self:flex-start;background:var(--raised);border:1px solid var(--hairline);border-end-start-radius:8px}
+.b .src{display:block;margin-top:6px;font-size:12px;color:var(--text2)}
+[dir="rtl"] .b{line-height:1.65}
+.anim{align-self:stretch;background:var(--raised);border:1px solid var(--hairline);border-radius:18px;padding:14px;position:relative}
+.anim svg{width:100%;height:auto;display:block}
+.anim .cached{position:absolute;top:12px;inset-inline-end:12px;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--spark-text);background:rgb(255 178 36 / .16);padding:4px 10px;border-radius:999px}
+.anim .cached i{width:7px;height:7px;border-radius:50%;background:var(--spark);display:block}
+.anim .d{stroke-dasharray:1 2;stroke-dashoffset:1}
+.in .anim .d{animation:draw .7s var(--decel) forwards;animation-delay:calc(var(--i) * 120ms + 200ms)}
+.anim .lbl{opacity:0}
+.in .anim .lbl{animation:fade .5s var(--decel) forwards;animation-delay:calc(var(--i) * 120ms + 500ms)}
+@keyframes fade{to{opacity:1}}
+.budget{margin:0 18px 18px;padding:14px 16px;background:var(--raised);border-radius:16px;border:1px solid var(--hairline)}
+.budget .top{display:flex;justify-content:space-between;font-size:13px;color:var(--text2)}
+.budget .top b{color:var(--text);font-weight:500}
+.meter{height:6px;border-radius:999px;background:var(--raised2);margin-top:10px;overflow:hidden}
+.meter i{display:block;height:100%;width:34%;border-radius:999px;background:var(--success)}
+.input{margin:0 18px 18px;display:flex;align-items:center;gap:10px;background:var(--raised);border:1px solid var(--hairline);border-radius:14px;padding:10px 10px 10px 16px;color:var(--text3);font-size:15px}
+[dir="rtl"] .input{padding:10px 16px 10px 10px}
+.input span{flex:1}
+.send{width:32px;height:32px;border-radius:10px;background:var(--accent);display:grid;place-items:center}
+[dir="rtl"] .send svg{transform:scaleX(-1)}
+
+footer{padding:56px 0 72px;border-top:1px solid var(--hairline);color:var(--text3);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+
+@media (prefers-reduced-motion: reduce){
+  .z,.spark,.tile,.anim .d,.anim .lbl{animation:none!important;stroke-dashoffset:0;transform:none;opacity:1}
+  .replay{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="hero wrap">
+  <svg class="mark" id="heroMark" viewBox="0 0 64 64" role="img" aria-label="Zakerly mark">
+    <rect class="tile" width="64" height="64" rx="18" fill="var(--accent)"/>
+    <path class="z" d="M17 23H37L19 44H45" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle class="spark" cx="48" cy="16" r="4" fill="#FFB224"/>
+  </svg>
+  <h1>Zakerly<span class="ar" lang="ar" dir="rtl">ذاكرلي</span></h1>
+  <p><b>The friend who already read your slides</b> and will explain them as many times as you need.</p>
+  <button class="replay" type="button" id="replay">Replay the mark</button>
+</header>
+
+<main>
+<section class="wrap" id="logo">
+  <div class="eyebrow">01 Logo</div>
+  <h2>One pen stroke, one spark.</h2>
+  <p class="lede">The Z is a single rounded stroke, because the tutor draws its answers. The bottom stroke runs long, like the underline you put under the thing that matters. The amber spark is where the pen lifts: the moment it clicks.</p>
+
+  <div class="grid logo-grid">
+    <div class="card logo-tile on-light">
+      <svg width="96" height="96" viewBox="0 0 64 64" aria-label="Mark on light"><rect width="64" height="64" rx="18" fill="#C2255C"/><path d="M17 23H37L19 44H45" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="16" r="4" fill="#FFB224"/></svg>
+      <small>logo.svg · Hibiscus 600</small>
+    </div>
+    <div class="card logo-tile on-dark">
+      <svg width="96" height="96" viewBox="0 0 64 64" aria-label="Mark on dark"><rect width="64" height="64" rx="18" fill="#D6336C"/><path d="M17 23H37L19 44H45" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="16" r="4" fill="#FFB224"/></svg>
+      <small>logo-dark.svg · Hibiscus 500</small>
+    </div>
+    <div class="card logo-tile">
+      <div class="lockup">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="var(--accent)"/><path d="M17 23H37L19 44H45" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="16" r="4" fill="#FFB224"/></svg>
+        <div><div class="en">Zakerly</div><div class="ar" lang="ar">ذاكرلي</div></div>
+      </div>
+      <small style="color:var(--text3)">lockup.svg</small>
+    </div>
+  </div>
+
+  <div class="grid spec">
+    <div class="card">
+      <h3>Construction</h3>
+      <svg class="construct" viewBox="-8 -8 80 80" aria-label="Construction grid">
+        <g stroke="var(--hairline)" stroke-width=".4">
+          <path d="M0 16H64M0 32H64M0 48H64M16 0V64M32 0V64M48 0V64"/>
+        </g>
+        <rect width="64" height="64" rx="18" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width=".6"/>
+        <path d="M17 23H37L19 44H45" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+        <path d="M17 23H37L19 44H45" fill="none" stroke="var(--surface)" stroke-width=".6"/>
+        <circle cx="48" cy="16" r="4" fill="#FFB224"/>
+        <g fill="var(--text)"><circle cx="17" cy="23" r="1.1"/><circle cx="37" cy="23" r="1.1"/><circle cx="19" cy="44" r="1.1"/><circle cx="45" cy="44" r="1.1"/></g>
+      </svg>
+      <p style="margin-top:12px">64 grid. Radius 18. Stroke 9, round caps. Points 17,23 → 37,23 → 19,44 → 45,44. Spark r4 at 48,16.</p>
+    </div>
+    <div class="card">
+      <h3>Clear space and size</h3>
+      <ul>
+        <li>Clear space on every side: a quarter of the mark's height.</li>
+        <li>Smallest mark: 20px. From 16 to 20px, use favicon.svg (stroke 10, spark r5).</li>
+        <li>Smallest lockup: mark at 28px.</li>
+        <li>In RTL layouts, mirror the lockup, never the mark.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Please don't</h3>
+      <ul>
+        <li>Add gradients, glows or shadows to the tile.</li>
+        <li>Square the stroke ends or change the stroke weight.</li>
+        <li>Move the spark or turn it white.</li>
+        <li>Set "Zakerly" in anything but Readex Pro.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="color">
+  <div class="eyebrow">02 Color</div>
+  <h2>Hibiscus, like the karkadeh.</h2>
+  <p class="lede">A warm berry red that stands apart from every blue study and banking app, with amber for the good moments and mint for right answers. Every text pairing below clears WCAG AA.</p>
+
+  <div class="grid swatches">
+    <div class="card sw">
+      <div class="chips"><div style="background:#C2255C;color:#fff">Light</div><div style="background:#D6336C;color:#fff">Dark</div></div>
+      <div class="meta"><h3>Hibiscus</h3><div class="role">Primary, buttons, the tile</div>
+        <div class="hex"><span>Light</span><b>#C2255C</b><span>Dark</span><b>#D6336C</b><span>Text on dark</span><b>#FF7AA2</b></div>
+        <span class="ratio">White on it 5.66 · 4.62</span></div>
+    </div>
+    <div class="card sw">
+      <div class="chips"><div style="background:#FFB224;color:#1F1A1C">Light</div><div style="background:#FFB224;color:#1F1A1C">Dark</div></div>
+      <div class="meta"><h3>Amber</h3><div class="role">Spark, streaks, cache hits</div>
+        <div class="hex"><span>Fill</span><b>#FFB224</b><span>Text, light</span><b>#8A5300</b><span>Text, dark</span><b>#FFB224</b></div>
+        <span class="ratio">Ink on it 9.52 · text 6.33</span></div>
+    </div>
+    <div class="card sw">
+      <div class="chips"><div style="background:#1E8E5A;color:#fff">Light</div><div style="background:#3DD68C;color:#1F1A1C">Dark</div></div>
+      <div class="meta"><h3>Mint</h3><div class="role">Success, correct answers, ready</div>
+        <div class="hex"><span>Light</span><b>#1E8E5A</b><span>Text, light</span><b>#17774B</b><span>Dark</span><b>#3DD68C</b></div>
+        <span class="ratio">Text 5.56 · 9.30</span></div>
+    </div>
+    <div class="card sw">
+      <div class="chips"><div style="background:#1F1A1C;color:#F6F2F3">Ink</div><div style="background:#F6F2F3;color:#1F1A1C">Ink dark</div></div>
+      <div class="meta"><h3>Ink</h3><div class="role">Text, a warm near-black</div>
+        <div class="hex"><span>Light</span><b>#1F1A1C</b><span>Dark</span><b>#F6F2F3</b></div>
+        <span class="ratio">17.17 · 15.72 on cards</span></div>
+    </div>
+  </div>
+
+  <div class="neutrals">
+    <div class="n" style="background:#F7F5F3;color:#1F1A1C">Paper<br><b>#F7F5F3</b></div>
+    <div class="n" style="background:#FFFFFF;color:#1F1A1C">Card<br><b>#FFFFFF</b></div>
+    <div class="n" style="background:#EFEBE8;color:#6B6266">Card 2<br><b>#EFEBE8</b></div>
+    <div class="n" style="background:#6B6266;color:#fff">Ink 2<br><b>#6B6266</b></div>
+    <div class="n" style="background:#0E0C0D;color:#F6F2F3">Paper dark<br><b>#0E0C0D</b></div>
+    <div class="n" style="background:#1C191A;color:#F6F2F3">Card dark<br><b>#1C191A</b></div>
+    <div class="n" style="background:#2A2628;color:#ABA3A6">Card 2 dark<br><b>#2A2628</b></div>
+    <div class="n" style="background:#ABA3A6;color:#1C191A">Ink 2 dark<br><b>#ABA3A6</b></div>
+  </div>
+</section>
+
+<section class="wrap" id="type">
+  <div class="eyebrow">03 Typography</div>
+  <h2>Readex Pro, in both scripts.</h2>
+  <p class="lede">One family draws Latin and Arabic with the same weight and rhythm. It extends Lexend, a typeface built from reading research, which is the right root for an app you read in for hours.</p>
+
+  <div class="type-hero">
+    <div class="card"><div class="glyphs">Aa</div><div class="weights"><span style="font-weight:300">Light</span><span>Regular</span><span style="font-weight:500">Medium</span><span style="font-weight:600">SemiBold</span></div></div>
+    <div class="card" dir="rtl" lang="ar"><div class="glyphs ar">أب</div><div class="weights ar"><span style="font-weight:300">خفيف</span><span>عادي</span><span style="font-weight:500">متوسط</span><span style="font-weight:600">عريض</span></div></div>
+  </div>
+
+  <div class="card scale">
+    <div class="row"><span class="tok">display 34 / 600</span><span style="font-size:34px;font-weight:600;letter-spacing:-.006em;line-height:1.1">Data Structures</span><span class="ar" lang="ar" dir="rtl" style="font-size:34px;font-weight:600;line-height:1.25">هياكل البيانات</span></div>
+    <div class="row"><span class="tok">title 22 / 600</span><span style="font-size:22px;font-weight:600;line-height:1.15">Week 4: Stacks and queues</span><span class="ar" lang="ar" dir="rtl" style="font-size:22px;font-weight:600;line-height:1.3">محاضرة 4: الـ stack والـ queue</span></div>
+    <div class="row"><span class="tok">headline 17 / 600</span><span style="font-size:17px;font-weight:600">Ask me anything from this course</span><span class="ar" lang="ar" dir="rtl" style="font-size:17px;font-weight:600">اسألني أي حاجة في المادة</span></div>
+    <div class="row"><span class="tok">body 15 / 400</span><span style="font-size:15px;line-height:1.4">A stack gives you back the last thing you put in. A queue gives you the first.</span><span class="ar" lang="ar" dir="rtl" style="font-size:15px;line-height:1.55">الـ stack بيرجعلك آخر حاجة حطيتها، والـ queue بيرجعلك أول حاجة.</span></div>
+    <div class="row"><span class="tok">label 13 / 500</span><span style="font-size:13px;font-weight:500">Explain · Socratic · Quiz me</span><span class="ar" lang="ar" dir="rtl" style="font-size:13px;font-weight:500">اشرحلي · ناقشني · امتحنّي</span></div>
+    <div class="row"><span class="tok">caption 12 / 400</span><span style="font-size:12px;color:var(--text2)">From Lecture 4, slide 12</span><span class="ar" lang="ar" dir="rtl" style="font-size:12px;color:var(--text2)">من محاضرة 4، سلايد 12</span></div>
+  </div>
+</section>
+
+<section class="wrap" id="voice">
+  <div class="eyebrow">04 Voice</div>
+  <h2>Like a senior student. Never like a portal.</h2>
+  <p class="lede">Say what happened, then what to do next. Arabic is written in Egyptian, not translated.</p>
+
+  <div class="grid voice">
+    <div class="card v"><div class="where">Out of scope</div><div class="before">The answer is not available in the provided context.</div><div class="after">I couldn't find this in your course files. Want to try something from Week 4?</div><div class="after ar" lang="ar" dir="rtl">ملقتش ده في ملفات المادة. تحب نشوف حاجة من Week 4؟</div></div>
+    <div class="card v"><div class="where">Processing</div><div class="before">Processing course files...</div><div class="after">Reading your slides. Give me a minute.</div><div class="after ar" lang="ar" dir="rtl">بقرا السلايدز بتاعتك. دقيقة واحدة.</div></div>
+    <div class="card v"><div class="where">Quiz, wrong answer</div><div class="before">Incorrect answer.</div><div class="after">Close. Look at slide 12 again.</div><div class="after ar" lang="ar" dir="rtl">قربت. بص على سلايد 12 تاني.</div></div>
+    <div class="card v"><div class="where">Network error</div><div class="before">Error: request failed (500).</div><div class="after">Canvas isn't answering right now. Try again in a bit.</div><div class="after ar" lang="ar" dir="rtl">Canvas مش بيرد دلوقتي. جرّب كمان شوية.</div></div>
+  </div>
+
+  <ol class="card rules">
+    <li><b>Talk like a senior student.</b> "I read your slides", not "documents indexed".</li>
+    <li><b>End with an action.</b> Every error and empty state says what to do next.</li>
+    <li><b>Write Arabic, don't translate it.</b> Egyptian register, course terms stay in English.</li>
+    <li><b>Never blame the student.</b> Canvas failed, the student didn't.</li>
+    <li><b>Be honest about the source.</b> Not in the files? Say so.</li>
+    <li><b>Keep it short.</b> One idea per line, one exclamation mark per screen at most.</li>
+  </ol>
+</section>
+
+<section class="wrap" id="app">
+  <div class="eyebrow">05 In the app</div>
+  <h2>Quiet screens, one accent, a spark when it counts.</h2>
+  <p class="lede">The same moment in English and Arabic. The explanation was already drawn for the class, so it opens instantly and costs nothing.</p>
+
+  <div class="mocks" id="mocks">
+    <!-- English -->
+    <div class="app" dir="ltr" lang="en">
+      <div class="bar">
+        <div class="brand"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="var(--accent)"/><path d="M17 23H37L19 44H45" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="16" r="4" fill="#FFB224"/></svg>Zakerly</div>
+        <div class="streak"><i></i>4 days</div>
+      </div>
+      <div class="course"><span class="pill">Data Structures</span>
+        <svg class="ring" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="var(--success)" stroke-width="2.5"/><path d="M5.8 9.2l2.1 2 4.3-4.4" fill="none" stroke="var(--success)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="modes"><span class="on">Explain</span><span>Socratic</span><span>Quiz me</span></div>
+      <div class="chat">
+        <div class="b me">What's the difference between a stack and a queue?</div>
+        <div class="anim">
+          <span class="cached"><i></i>Drawn for your class</span>
+          <svg viewBox="0 0 300 148" aria-label="Stack and queue diagram">
+            <g fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path class="d" pathLength="1" style="--i:0" d="M30 40V112H90V40"/>
+              <path class="d" pathLength="1" style="--i:1" d="M38 96H82"/>
+              <path class="d" pathLength="1" style="--i:2" d="M38 80H82"/>
+              <path class="d" pathLength="1" style="--i:3" d="M38 64H82"/>
+              <path class="d" pathLength="1" style="--i:4" d="M60 50V22M52 30L60 22L68 30" stroke="#FFB224"/>
+            </g>
+            <g fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path class="d" pathLength="1" style="--i:1" d="M150 62H280M150 102H280"/>
+              <path class="d" pathLength="1" style="--i:2" d="M178 70V94M208 70V94M238 70V94"/>
+              <path class="d" pathLength="1" style="--i:4" d="M126 82H142M136 76L142 82L136 88M262 82H290M284 76L290 82L284 88" stroke="#FFB224"/>
+            </g>
+            <g font-family="Readex Pro, sans-serif" font-size="12" fill="var(--text2)">
+              <text class="lbl" style="--i:3" x="60" y="128" text-anchor="middle" font-weight="600" fill="var(--text)">Stack</text>
+              <text class="lbl" style="--i:3" x="60" y="144" text-anchor="middle">last in, first out</text>
+              <text class="lbl" style="--i:4" x="214" y="128" text-anchor="middle" font-weight="600" fill="var(--text)">Queue</text>
+              <text class="lbl" style="--i:4" x="214" y="144" text-anchor="middle">first in, first out</text>
+            </g>
+          </svg>
+        </div>
+        <div class="b bot">A stack gives you back the <b>last</b> thing you put in. A queue gives you the <b>first</b>, like the line at the cafeteria.<span class="src">Lecture 4, slide 12</span></div>
+      </div>
+      <div class="budget"><div class="top"><span>This week's study budget</span><b>Plenty left</b></div><div class="meter"><i></i></div></div>
+      <div class="input"><span>Ask about this course</span><span class="send"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+    </div>
+
+    <!-- Arabic -->
+    <div class="app" dir="rtl" lang="ar">
+      <div class="bar">
+        <div class="brand"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="18" fill="var(--accent)"/><path d="M17 23H37L19 44H45" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="16" r="4" fill="#FFB224"/></svg>ذاكرلي</div>
+        <div class="streak"><i></i>4 أيام</div>
+      </div>
+      <div class="course"><span class="pill">Data Structures</span>
+        <svg class="ring" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="var(--success)" stroke-width="2.5"/><path d="M5.8 9.2l2.1 2 4.3-4.4" fill="none" stroke="var(--success)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="modes"><span class="on">اشرحلي</span><span>ناقشني</span><span>امتحنّي</span></div>
+      <div class="chat">
+        <div class="b me">إيه الفرق بين الـ stack والـ queue؟</div>
+        <div class="anim">
+          <span class="cached"><i></i>اترسمت لدفعتك</span>
+          <svg viewBox="0 0 300 148" aria-label="رسم الـ stack والـ queue">
+            <g fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path class="d" pathLength="1" style="--i:0" d="M210 40V112H270V40"/>
+              <path class="d" pathLength="1" style="--i:1" d="M218 96H262"/>
+              <path class="d" pathLength="1" style="--i:2" d="M218 80H262"/>
+              <path class="d" pathLength="1" style="--i:3" d="M218 64H262"/>
+              <path class="d" pathLength="1" style="--i:4" d="M240 50V22M232 30L240 22L248 30" stroke="#FFB224"/>
+            </g>
+            <g fill="none" stroke="var(--success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path class="d" pathLength="1" style="--i:1" d="M20 62H150M20 102H150"/>
+              <path class="d" pathLength="1" style="--i:2" d="M62 70V94M92 70V94M122 70V94"/>
+              <path class="d" pathLength="1" style="--i:4" d="M174 82H158M164 76L158 82L164 88M38 82H10M16 76L10 82L16 88" stroke="#FFB224"/>
+            </g>
+            <g font-family="Readex Pro, sans-serif" font-size="12" fill="var(--text2)">
+              <text class="lbl" style="--i:3" x="240" y="128" text-anchor="middle" font-weight="600" fill="var(--text)">Stack</text>
+              <text class="lbl" style="--i:3" x="240" y="144" text-anchor="middle">آخر واحد يطلع الأول</text>
+              <text class="lbl" style="--i:4" x="86" y="128" text-anchor="middle" font-weight="600" fill="var(--text)">Queue</text>
+              <text class="lbl" style="--i:4" x="86" y="144" text-anchor="middle">أول واحد يطلع الأول</text>
+            </g>
+          </svg>
+        </div>
+        <div class="b bot">الـ stack بيرجعلك <b>آخر</b> حاجة حطيتها. الـ queue بيرجعلك <b>أول</b> حاجة، زي طابور الكافيتريا.<span class="src">محاضرة 4، سلايد 12</span></div>
+      </div>
+      <div class="budget"><div class="top"><span>رصيد المذاكرة الأسبوع ده</span><b>لسه معاك كتير</b></div><div class="meter"><i></i></div></div>
+      <div class="input"><span>اسأل في المادة دي</span><span class="send"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h9M8.5 4.5L12 8l-3.5 3.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="wrap">
+  <span>Zakerly · ذاكرلي · EUI GenAI for Education Hackathon 2026</span>
+  <span>Readex Pro · Hibiscus #C2255C / #D6336C · Amber #FFB224</span>
+</footer>
+
+<script>
+(function(){
+  var btn=document.getElementById('replay'), mark=document.getElementById('heroMark');
+  if(btn&&mark){btn.addEventListener('click',function(){
+    var clone=mark.cloneNode(true); mark.parentNode.replaceChild(clone,mark); mark=clone;
+  });}
+  var mocks=document.getElementById('mocks');
+  if(!mocks) return;
+  window.addEventListener('beforeprint',function(){mocks.classList.add('in');});
+  if(!('IntersectionObserver' in window)||mocks.getBoundingClientRect().top<window.innerHeight*0.85){mocks.classList.add('in');return;}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting){mocks.classList.add('in');io.disconnect();}
+  });},{rootMargin:'0px 0px -15% 0px'});
+  io.observe(mocks);
+})();
+</script>
+</body>
+</html>

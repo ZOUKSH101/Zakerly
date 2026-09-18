@@ -90,7 +90,8 @@ class RequestScheduler extends ChangeNotifier {
     return job;
   }
 
-  /// Pro feature: move a background job into the live lane.
+  /// "Process now": move a background job into the live lane. Available on
+  /// every plan; Pro only raises the pacing limits.
   void prioritize(Job job) {
     if (!job.isOpen || job.state == JobState.running) return;
     job.lane = JobLane.interactive;
@@ -125,10 +126,12 @@ class RequestScheduler extends ChangeNotifier {
         reason = 'Waiting for a free slot';
       } else if (_starts.length >= policy.requestsPerMinute) {
         reason = 'Pacing at ${policy.requestsPerMinute}/min';
-      } else if (background && !offPeak) {
-        reason = 'Scheduled for off-peak (${policy.windowLabel})';
       } else if (background && liveWaiting) {
-        reason = 'Yielding to live questions';
+        reason = 'Letting your questions go first';
+      } else if (background && !offPeak && runningCount > 0) {
+        // Outside the off-peak window, background work only runs when the
+        // line is quiet, one job at a time.
+        reason = 'Waiting for a quiet moment';
       } else if (!budget.canSpend(job.estimatedTokens)) {
         job
           ..state = JobState.failed

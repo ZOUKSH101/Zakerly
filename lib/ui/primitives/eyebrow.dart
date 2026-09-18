@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// Small uppercase section label with extra letter-spacing.
+/// Small section label with a touch of extra letter-spacing. Renders
+/// [label] as given — callers choose the casing; this does not force
+/// upper-case, which reads as shouting rather than an Apple-style kicker.
 class ZEyebrow extends StatelessWidget {
   const ZEyebrow(this.label, {super.key});
 
@@ -13,11 +15,11 @@ class ZEyebrow extends StatelessWidget {
     final z = context.z;
     final base = context.type.labelSmall;
     return Text(
-      label.toUpperCase(),
+      label,
       style: base?.copyWith(
         color: z.textTertiary,
-        fontWeight: FontWeight.w600,
-        letterSpacing: (base.letterSpacing ?? 0) + 0.6,
+        fontWeight: FontWeight.w500,
+        letterSpacing: (base.letterSpacing ?? 0) + 0.3,
       ),
     );
   }

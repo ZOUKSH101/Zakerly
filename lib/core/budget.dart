@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
@@ -40,7 +40,7 @@ const plans = {
     maxCourses: 50,
     animationsPerDay: 100,
     priorityProcessing: true,
-    perks: ['All your courses', '3M tokens / month', '100 new animations / day', 'Index now, skip the queue'],
+    perks: ['All your courses', '3M tokens / month', '100 new animations / day', 'Faster processing'],
   ),
 };
 

@@ -1,4 +1,4 @@
-import 'util.dart';
+﻿import 'util.dart';
 
 class AppUser {
   const AppUser({required this.uid, required this.name, required this.email});
@@ -34,7 +34,7 @@ class CourseFile {
   /// 'pdf' | 'slides' | 'assignment' | 'page'
   final String kind;
 
-  /// Size of the full file once extracted — what a student would paste into
+  /// Size of the full file once extracted â€” what a student would paste into
   /// a chatbot without Zakerly.
   final int sourceTokens;
 
@@ -70,7 +70,7 @@ enum StudyMode { explain, socratic, quiz }
 extension StudyModeLabel on StudyMode {
   String get label => switch (this) {
         StudyMode.explain => 'Explain',
-        StudyMode.socratic => 'Socratic',
+        StudyMode.socratic => 'Guide me',
         StudyMode.quiz => 'Quiz me',
       };
 }

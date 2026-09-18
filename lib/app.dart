@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/app_services.dart';
+import 'core/preferences.dart';
 import 'ui/features/sign_in/sign_in_screen.dart';
 import 'ui/theme.dart';
 import 'ui/workspace.dart';
@@ -12,13 +14,20 @@ class ZakerlyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Zakerly',
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(Brightness.light),
-      darkTheme: buildTheme(Brightness.dark),
-      themeMode: ThemeMode.system,
-      home: const AuthGate(),
+    final prefs = Services.of(context).preferences;
+    return ListenableBuilder(
+      listenable: prefs,
+      builder: (context, _) => MaterialApp(
+        title: 'Zakerly',
+        debugShowCheckedModeBanner: false,
+        theme: buildTheme(Brightness.light),
+        darkTheme: buildTheme(Brightness.dark),
+        themeMode: prefs.themeMode,
+        locale: prefs.language.locale,
+        supportedLocales: [for (final l in AppLanguage.values) l.locale],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: const AuthGate(),
+      ),
     );
   }
 }

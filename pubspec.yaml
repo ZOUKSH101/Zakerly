@@ -1,5 +1,5 @@
-name: zakerly
-description: "Zakerly — a GenAI study workspace connected to your LMS."
+﻿name: zakerly
+description: "Zakerly â€” a GenAI study workspace connected to your LMS."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -8,6 +8,8 @@ environment:
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
   web: ^1.1.0
 

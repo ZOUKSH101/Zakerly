@@ -1,6 +1,7 @@
 // SettingsDialog: plan, BYOK model keys and account, three equal columns
-// separated by hairlines (stacked on small viewports). No page scroll at the
-// >=780x448 breakpoint; scrolls as a single column below it.
+// separated by hairlines at the >=780x448 breakpoint (each column scrolls on
+// its own if its content runs long); below that they stack into one
+// scrolling column.
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/app_services.dart';
 import '../../../core/budget.dart';
+import '../../../core/preferences.dart';
 import '../../../core/providers.dart';
 import '../../../core/util.dart';
 import '../../primitives/primitives.dart';
@@ -77,7 +79,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
   Widget build(BuildContext context) {
     final s = Services.of(context);
     return ListenableBuilder(
-      listenable: Listenable.merge([s.budget, s.providers, s.cache, s.auth.user]),
+      listenable: Listenable.merge([s.budget, s.providers, s.cache, s.auth.user, s.preferences]),
       builder: (context, _) {
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -88,7 +90,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _planColumn(context, s, stacked: true),
+                    _planColumn(context, s),
                     const SizedBox(height: ZSpace.s16),
                     _rowDivider(context),
                     const SizedBox(height: ZSpace.s16),
@@ -104,11 +106,13 @@ class _SettingsBodyState extends State<_SettingsBody> {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(child: _planColumn(context, s, stacked: false)),
+                Expanded(
+                  child: SingleChildScrollView(child: _planColumn(context, s)),
+                ),
                 _columnDivider(context),
-                Expanded(child: _keysColumn(context, s)),
+                Expanded(child: SingleChildScrollView(child: _keysColumn(context, s))),
                 _columnDivider(context),
-                Expanded(child: _accountColumn(context, s)),
+                Expanded(child: SingleChildScrollView(child: _accountColumn(context, s))),
               ],
             );
           },
@@ -127,16 +131,16 @@ class _SettingsBodyState extends State<_SettingsBody> {
 
   // ---- Column 1: Plan ------------------------------------------------
 
-  Widget _planColumn(BuildContext context, AppServices s, {required bool stacked}) {
+  Widget _planColumn(BuildContext context, AppServices s) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const ZEyebrow('Plan'),
         const SizedBox(height: ZSpace.s8),
         _planCard(context, s, PlanTier.free),
-        const SizedBox(height: ZSpace.s8),
+        const SizedBox(height: ZLayout.cardGap),
         _planCard(context, s, PlanTier.pro),
-        if (stacked) const SizedBox(height: ZSpace.s12) else const Spacer(),
+        const SizedBox(height: ZSpace.s12),
         Text(
           "Payments aren't hooked up in this demo yet.",
           style: context.type.bodySmall,
@@ -151,7 +155,6 @@ class _SettingsBodyState extends State<_SettingsBody> {
     final isCurrent = s.budget.tier == tier;
 
     return ZCard(
-      padding: ZSpace.s12,
       selected: isCurrent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,7 +205,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
         const ZEyebrow('Model keys'),
         const SizedBox(height: ZSpace.s8),
         Text(
-          'Bring your own key — it stays on this device and goes straight to the provider.',
+          'Bring your own key. It stays on this device, sent straight to the provider.',
           style: context.type.bodySmall,
         ),
         const SizedBox(height: ZSpace.s12),
@@ -367,7 +370,7 @@ class _SettingsBodyState extends State<_SettingsBody> {
       children: [
         const ZEyebrow('Account'),
         const SizedBox(height: ZSpace.s8),
-        Text(user?.name ?? '—', style: context.type.titleMedium),
+        Text(user?.name ?? 'Guest', style: context.type.titleMedium),
         const SizedBox(height: ZSpace.s4),
         Text(user?.email ?? '', style: context.type.bodySmall),
         const SizedBox(height: ZSpace.s12),
@@ -380,24 +383,46 @@ class _SettingsBodyState extends State<_SettingsBody> {
             s.auth.signOut();
           },
         ),
+        const SizedBox(height: ZSpace.s16),
+        const ZEyebrow('Appearance'),
         const SizedBox(height: ZSpace.s8),
+        ZSegmented<ThemeMode>(
+          segments: const [
+            (ThemeMode.system, 'System'),
+            (ThemeMode.light, 'Light'),
+            (ThemeMode.dark, 'Dark'),
+          ],
+          selected: s.preferences.themeMode,
+          onChanged: s.preferences.setThemeMode,
+        ),
+        const SizedBox(height: ZSpace.s16),
+        const ZEyebrow('Language'),
+        const SizedBox(height: ZSpace.s8),
+        ZSegmented<AppLanguage>(
+          segments: const [
+            (AppLanguage.english, 'English'),
+            (AppLanguage.arabic, 'العربية'),
+          ],
+          selected: s.preferences.language,
+          onChanged: s.preferences.setLanguage,
+        ),
+        const SizedBox(height: ZSpace.s16),
         ZButton(
           label: 'Show tutorial again',
           variant: ZButtonVariant.plain,
           size: ZButtonSize.sm,
           onPressed: () => showTutorial(context),
         ),
-        const SizedBox(height: ZSpace.s20),
+        const SizedBox(height: ZSpace.s16),
         ZRow(
           title: s.lms.name,
           subtitle: s.lms.host,
           trailing: const ZBadge(label: 'Connected (demo)', tone: ZBadgeTone.success),
         ),
-        const SizedBox(height: ZSpace.s20),
+        const SizedBox(height: ZSpace.s16),
         const ZEyebrow('Shared cache'),
         const SizedBox(height: ZSpace.s8),
         ZCard(
-          padding: ZSpace.s12,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -413,11 +438,6 @@ class _SettingsBodyState extends State<_SettingsBody> {
               Text(
                 '${formatTokens(cache.tokensSaved)} tokens saved',
                 style: context.type.labelLarge?.copyWith(color: z.success),
-              ),
-              const SizedBox(height: ZSpace.s4),
-              Text(
-                'Generated once per course, then reused by everyone.',
-                style: context.type.bodySmall,
               ),
             ],
           ),

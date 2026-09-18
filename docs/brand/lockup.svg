@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 232 64" width="232" height="64" role="img" aria-label="Zakerly, ذاكرلي">
+  <style>
+    .tile { fill: #C2255C; }
+    .en { fill: #1F1A1C; font: 600 30px "Readex Pro", system-ui, sans-serif; letter-spacing: -0.3px; }
+    .ar { fill: #6B6266; font: 500 19px "Readex Pro", "Noto Sans Arabic", system-ui, sans-serif; }
+    @media (prefers-color-scheme: dark) {
+      .tile { fill: #D6336C; }
+      .en { fill: #F6F2F3; }
+      .ar { fill: #ABA3A6; }
+    }
+  </style>
+  <!-- Lockup: mark 64, gap 16 (0.25 x mark), Latin over Arabic. Live text in Readex Pro; outline before print. -->
+  <rect class="tile" width="64" height="64" rx="18"/>
+  <path d="M17 23H37L19 44H45" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="48" cy="16" r="4" fill="#FFB224"/>
+  <text class="en" x="80" y="33">Zakerly</text>
+  <text class="ar" x="81" y="58">ذاكرلي</text>
+</svg>

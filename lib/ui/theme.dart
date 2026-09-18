@@ -29,6 +29,15 @@ class ZLayout {
   static const double compactBreakpoint = 520;
   static const double pillRingSize = 18;
   static const double pillRingStroke = 2.5;
+
+  /// Standard inner padding for a panel/card-shaped surface (Apple range:
+  /// generous breathing room between a container's edge and its content).
+  static const double panelPadding = 24;
+  /// Gap between sibling cards inside a panel (e.g. a `Stack`/`Wrap` of
+  /// [ZCard]s).
+  static const double cardGap = 16;
+  /// Vertical gap between distinct sections within a panel.
+  static const double sectionGap = 24;
 }
 
 /// Icon sizes used across primitives and features.
@@ -47,6 +56,8 @@ class ZRadius {
   static const double sm = 8;
   static const double md = 12;
   static const double lg = 16;
+  /// Card/panel surfaces — top of the Apple "large radius" range (16-20).
+  static const double card = 18;
   static const double xl = 22;
   static const double pill = 999;
 }
@@ -77,6 +88,22 @@ class ZMotion {
 
   /// One bounce cycle of [ZTypingDots].
   static const Duration typingCycle = Duration(milliseconds: 1200);
+}
+
+/// Elevation scale. Apple only casts shadow in light mode — dark surfaces
+/// read as "elevated" purely through the raised/raised2 fill contrast, so
+/// [card] returns nothing under [Brightness.dark].
+class ZShadow {
+  ZShadow._();
+
+  /// Gentle elevation for a card/panel surface, light mode only.
+  static List<BoxShadow> card(Brightness brightness) {
+    if (brightness == Brightness.dark) return const [];
+    return const [
+      BoxShadow(color: Color(0x14000000), blurRadius: 16, offset: Offset(0, 6)), // black @ 8%
+      BoxShadow(color: Color(0x0A000000), blurRadius: 2, offset: Offset(0, 1)), // black @ 4%
+    ];
+  }
 }
 
 /// Palette + semantic colors, theme-aware via [ThemeExtension].
@@ -211,7 +238,8 @@ class ZTokens extends ThemeExtension<ZTokens> {
 
 /// Compact type scale with the Apple tracking rule: letter-spacing decreases
 /// (goes negative) as size increases, line-height decreases as size grows.
-/// Discrete steps, no interpolation.
+/// Discrete steps, no interpolation. [display] and [title] render bold/
+/// semibold (Apple large-title weight); body copy stays regular.
 class ZType {
   ZType._();
 
@@ -229,8 +257,20 @@ class ZType {
   /// labelSmall=micro.
   static TextTheme textTheme(ZTokens tokens) {
     return TextTheme(
-      displaySmall: _style(display, height: 1.10, em: -0.006, color: tokens.text),
-      titleLarge: _style(title, height: 1.15, em: -0.002, color: tokens.text),
+      displaySmall: _style(
+        display,
+        height: 1.10,
+        em: -0.008,
+        color: tokens.text,
+        weight: FontWeight.w700,
+      ),
+      titleLarge: _style(
+        title,
+        height: 1.15,
+        em: -0.004,
+        color: tokens.text,
+        weight: FontWeight.w600,
+      ),
       titleMedium: _style(
         headline,
         height: 1.20,

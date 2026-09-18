@@ -1,4 +1,4 @@
-import 'budget.dart';
+﻿import 'budget.dart';
 import 'cache.dart';
 import 'courses.dart';
 import 'models.dart';
@@ -51,7 +51,7 @@ class IngestionService {
     courses.touch();
 
     final job = scheduler.submit(
-      label: 'Index ${file.name}',
+      label: 'Process ${file.name}',
       lane: JobLane.background,
       estimatedTokens: 1500,
       run: () async {

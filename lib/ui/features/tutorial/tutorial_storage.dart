@@ -1,36 +1,19 @@
 // Persists whether the first-run tutorial has already been shown.
-import 'package:web/web.dart' as web;
+//
+// Real builds are web-only (see CONTRACT.md), so `tutorial_storage_web.dart`
+// (window.localStorage via package:web) is what actually ships. The stub is
+// selected only when `dart:js_interop` isn't available on the compile
+// target — i.e. `flutter test`'s default VM platform — so tests don't need
+// `--platform chrome`.
+import 'tutorial_storage_stub.dart' if (dart.library.js_interop) 'tutorial_storage_web.dart';
 
-/// Tracks the "seen" flag for the first-run tutorial.
-///
-/// Backed by `window.localStorage` so the tutorial shows once per browser,
-/// not once per tab. `localStorage` access is wrapped in try/catch — some
-/// browsers throw when storage is blocked (private-browsing settings,
-/// disabled cookies/storage, or a non-web test environment) — and falls
-/// back to an in-memory flag that only lasts the current session.
+/// Tracks the "seen" flag for the first-run tutorial, so it shows once per
+/// browser (see [TutorialStorageImpl] for the platform-specific backing
+/// store).
 class TutorialStorage {
   TutorialStorage._();
 
-  static const String _key = 'zakerly.tutorial.seen';
+  static bool hasSeen() => TutorialStorageImpl.hasSeen();
 
-  static bool _sessionFallback = false;
-
-  /// Whether the tutorial has already been shown (this browser, or this
-  /// session if storage is unavailable).
-  static bool hasSeen() {
-    try {
-      return web.window.localStorage.getItem(_key) != null;
-    } catch (_) {
-      return _sessionFallback;
-    }
-  }
-
-  /// Records that the tutorial has been shown.
-  static void markSeen() {
-    try {
-      web.window.localStorage.setItem(_key, '1');
-    } catch (_) {
-      _sessionFallback = true;
-    }
-  }
+  static void markSeen() => TutorialStorageImpl.markSeen();
 }
